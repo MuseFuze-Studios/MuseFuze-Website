@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Dashboard - MuseFuze Studios</title>
+    <link rel="stylesheet" href="/stylesheets/dashboard.css">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="dashboard-sidebar">
+            <div class="sidebar-header">
+                <img src="/images/default-avatar.png" alt="Profile" id="profile-pic">
+                <h3 id="sidebar-username">Loading...</h3>
+                <button id="collapse-sidebar"><i class="fas fa-bars"></i></button>
+            </div>
+            <ul>
+                <li class="active"><a href="#"><i class="fas fa-home"></i> Overview</a></li>
+                <li><a href="#data-control"><i class="fas fa-cogs"></i> Data Control</a></li>
+                <li><a href="#security"><i class="fas fa-lock"></i> Security</a></li>
+                <li><a href="/store"><i class="fas fa-shopping-cart"></i> Store</a></li>
+                <li class="logout" id="logout"><a href="#"><i class="fas fa-sign-out-alt"></i> Log Out</a></li>
+            </ul>
+            <h3>Notifications</h3>
+            <div id="notification-container"></div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            <section class="dashboard-header">
+                <h1>Welcome, <span id="username">Loading...</span></h1>
+                <p>Manage your account settings, privacy, and security.</p>
+            </section>
+
+            <!-- Quick Actions Panel -->
+            <section class="quick-actions">
+                <button id="open-change-password"><i class="fas fa-key"></i> Change Password</button>
+                <button id="download-data"><i class="fas fa-download"></i> Download Data</button>
+                <button id="logout-all"><i class="fas fa-sign-out-alt"></i> Logout All Devices</button>
+            </section>
+
+            <!-- Account Overview -->
+            <section class="card profile-overview">
+                <h2>Account Overview</h2>
+                <div class="profile-details">
+                    <p><strong>Email:</strong> <span id="user-email">Loading...</span></p>
+                    <p><strong>Joined:</strong> <span id="user-joined">Loading...</span></p>
+                    <p><strong>Last Login:</strong> <span id="last-login">Loading...</span></p>
+                </div>
+                <button class="edit-button" id="edit-profile">Edit Profile</button>
+            </section>
+
+            <!-- Data Control -->
+            <section class="card data-control" id="data-control">
+                <h2>Data & Privacy Settings</h2>
+                <p>Manage what data is stored and tracked across different services.</p>
+            
+                <!-- Tab Navigation -->
+                <div class="tab-container">
+                    <button class="tab active" data-tab="all-services">All Services</button>
+                    <button class="tab" data-tab="vocora">Vocora</button>
+                </div>
+            
+                <!-- Privacy Settings Content -->
+                <div class="privacy-content active" id="all-services">
+                    <h3>General Privacy Settings (MuseFuze & Vocora)</h3>
+                    <div class="toggle-option">
+                        <label>Collect Cookies <span class="tooltip" data-tooltip="Cookies help remember your preferences, login details, and improve your experience. We do not use cookies for intrusive tracking.">ℹ️</span></label>
+                        <input type="checkbox" id="collect_cookies-toggle">
+                    </div>
+                
+                    <div class="toggle-option">
+                        <label>Allow Analytics Tracking <span class="tooltip" data-tooltip="We use in-house analytics to improve features and services. Your data is never shared with third-party advertisers.">ℹ️</span></label>
+                        <input type="checkbox" id="allow_analytics-toggle">
+                    </div>
+                
+                    <div class="toggle-option">
+                        <label>Personalized Ads <span class="tooltip" data-tooltip="Personalized ads help show content relevant to you. You can opt out to see non-targeted ads.">ℹ️</span></label>
+                        <input type="checkbox" id="personalized_ads-toggle">
+                    </div>
+                
+                    <div class="toggle-option">
+                        <label>Receive Promotional Emails <span class="tooltip" data-tooltip="Receive updates, discounts, and special offers from MuseFuze Studios. We do not spam or sell your email.">ℹ️</span></label>
+                        <input type="checkbox" id="receive_emails-toggle">
+                    </div>
+                
+                    <div class="toggle-option">
+                        <label>Store Purchase History <span class="tooltip" data-tooltip="Saving purchase history allows you to review past transactions and get recommendations based on your interests.">ℹ️</span></label>
+                        <input type="checkbox" id="store_purchase_history-toggle">
+                    </div>
+                </div>
+            
+                <div class="privacy-content" id="vocora">
+                    <h3>Vocora Privacy Settings</h3>
+                    
+                    <div class="toggle-option">
+                        <label>Watch History 
+                            <span class="tooltip" data-tooltip="Your watch history helps personalize your experience by suggesting relevant content. You can clear it anytime.">ℹ️</span>
+                        </label>
+                        <input type="checkbox" id="watch_history-toggle">
+                    </div>
+                
+                    <div class="toggle-option">
+                        <label>Personalized Video Recommendations 
+                            <span class="tooltip" data-tooltip="Vocora uses your watch history to recommend content that matches your interests. Disabling this will show generic recommendations.">ℹ️</span>
+                        </label>
+                        <input type="checkbox" id="video_recommendations-toggle">
+                    </div>
+                
+                    <div class="toggle-option">
+                        <label>Save Comments & Likes 
+                            <span class="tooltip" data-tooltip="Saving your comments and likes allows you to revisit them later. You can delete them from your account settings.">ℹ️</span>
+                        </label>
+                        <input type="checkbox" id="save_comments_likes-toggle">
+                    </div>
+                
+                    <div class="toggle-option">
+                        <label>Show Public Activity (Likes & Comments Visible to Others) 
+                            <span class="tooltip" data-tooltip="If enabled, other users can see your likes and comments on videos. Disable this for a private experience.">ℹ️</span>
+                        </label>
+                        <input type="checkbox" id="public_activity-toggle">
+                    </div>
+                </div>
+            </section>
+            
+
+            <!-- Security Section -->
+            <section class="card security-settings" id="security">
+                <h2>Account Security</h2>
+                <p>Manage your login credentials and security settings.</p>
+                <button id="open-change-password2">Change Password</button>
+                <button id="logout-all">Logout from All Devices</button>
+            </section>
+
+            <!-- 🔒 Change Password Modal -->
+            <div id="change-password-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>Change Password</h2>
+                    <p>Ensure your new password meets security requirements.</p>
+            
+                    <label for="current-password">Current Password</label>
+                    <input type="password" id="current-password" placeholder="Enter current password" required>
+            
+                    <label for="new-password">New Password</label>
+                    <input type="password" id="new-password" placeholder="Enter new password" required>
+            
+                    <label for="confirm-new-password">Confirm New Password</label>
+                    <input type="password" id="confirm-new-password" placeholder="Confirm new password" required>
+            
+                    <button class="save-button" id="submit-change-password">Save Changes</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="/js/dashboard-page-controller.js"></script>
+</body>
+</html>

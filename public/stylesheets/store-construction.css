@@ -1,0 +1,43 @@
+/* Store Construction Page */
+body {
+    background-color: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+/* Store Header */
+.store-header {
+    background: linear-gradient(135deg, #141e30, #243b55);
+    color: #ffffff;
+    padding: 60px 20px;
+    border-radius: 15px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+    text-transform: uppercase;
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+/* Store Message Section */
+.store-message {
+    max-width: 700px;
+    margin: 50px auto;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+}
+
+.store-message h2 {
+    color: #40c4ff;
+    font-size: 2rem;
+    margin-bottom: 15px;
+}
+
+.store-message p {
+    font-size: 1.2rem;
+    color: #cfd8dc;
+    margin-bottom: 20px;
+}

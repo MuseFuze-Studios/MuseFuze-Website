@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Product details - MuseFuze Store">
+    <meta name="keywords" content="MuseFuze Store, games, software, clothing, product details">
+    <meta name="author" content="MuseFuze Studios Ltd">
+
+    <link rel="stylesheet" href="/stylesheets/base.css">
+    <link rel="stylesheet" href="/stylesheets/header.css">
+    <link rel="stylesheet" href="/stylesheets/store.css">
+    <link rel="stylesheet" href="/stylesheets/footer.css">
+    
+    <title>Product Details | MuseFuze Store</title>
+</head>
+<body>
+    <header class="store-header">
+        <div class="hero-content">
+            <h1 id="product-title">Loading...</h1>
+        </div>
+    </header>
+
+    <main class="product-details">
+        <div class="product-container">
+            <div class="product-image-container">
+                <img id="product-image" src="" alt="Product Image">
+            </div>
+
+            <h2 class="product-title" id="product-name">Loading...</h2>
+            <p class="product-description" id="product-description">Loading product details...</p>
+            <p class="product-price" id="product-price">Loading price...</p>
+
+            <a href="#" id="buy-button" class="cta-button">Buy Now</a>
+            <a href="/store" class="back-button">← Back to Store</a>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 MuseFuze Studios Ltd. All rights reserved.</p>
+    </footer>
+
+    <script>
+        async function loadProductDetails() {
+            const paths = window.location.pathname.split('/').filter(Boolean);
+            const category = paths[1];  // e.g., "games"
+            const productId = paths[2];  // e.g., "my-last-wish"
+
+            if (!category || !productId) {
+                console.error("Invalid product page URL structure.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/store/api/${category}/${productId}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status} - ${response.statusText}`);
+                }
+
+                const product = await response.json();
+
+                // ✅ Ensure product details are correctly displayed
+                document.getElementById("product-title").innerText = product.name;
+                document.getElementById("product-image").src = product.image;
+                document.getElementById("product-description").innerText = product.description;
+                document.getElementById("product-price").innerText = `£${product.price.toFixed(2)}`;
+                document.getElementById("buy-button").href = `/store/checkout/${category}/${product.id}`;
+
+            } catch (error) {
+                console.error("Error loading product:", error);
+                document.querySelector(".product-container").innerHTML = "<p>Product not found.</p>";
+            }
+        }
+
+        // Load product details on page load
+        document.addEventListener("DOMContentLoaded", loadProductDetails);
+    </script>
+</body>
+</html>
