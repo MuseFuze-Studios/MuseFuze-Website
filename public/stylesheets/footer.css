@@ -1,23 +1,22 @@
-/* Footer Section */
-footer {
-    text-align: center;
-    padding: 20px;
-    background: #0b0c10;
-    color: #607d8b;
-    font-size: 0.9rem;
-}
 
-footer p {
-    margin: 0;
+footer {
+  text-align: center;
+  padding: 24px;
+  background: rgba(255,255,255,0.03);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  backdrop-filter: blur(6px);
 }
 
 footer a {
-    color: #40c4ff;
-    text-decoration: none;
-    transition: color 0.3s ease;
+  color: var(--accent);
+  margin: 0 8px;
+  text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 footer a:hover {
-    text-decoration: underline;
-    color: #18ffff;
+  color: var(--accent-light);
+  text-decoration: underline;
 }

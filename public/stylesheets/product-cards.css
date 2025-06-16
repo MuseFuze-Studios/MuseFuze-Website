@@ -1,59 +1,64 @@
+
 /* Product Cards Section */
 .product-cards {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 30px;
-    justify-content: center;
-    padding: 50px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
+    padding: 60px 40px;
+    max-width: 1200px;
+    margin: auto;
 }
 
+/* Individual Card */
 .product-card {
-    background: linear-gradient(145deg, #121212, #1e1e1e);
+    background: rgba(20, 24, 36, 0.95);
     color: #cfd8dc;
-    width: 320px;
-    border-radius: 15px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
-    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
     padding: 30px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: left;
 }
 
 .product-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 30px rgba(64, 196, 255, 0.5);
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(64, 196, 255, 0.3);
 }
 
 .product-card h2 {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     color: #40c4ff;
-    margin-bottom: 15px;
-    text-transform: uppercase;
-    font-weight: bold;
+    margin-bottom: 12px;
+    font-weight: 600;
 }
 
 .product-card p {
-    font-size: 1.1rem;
-    line-height: 1.8;
-    margin-bottom: 20px;
+    font-size: 1.05rem;
+    line-height: 1.7;
     color: #b0bec5;
+    margin-bottom: 20px;
 }
 
 .product-card .cta-button {
-    display: inline-block;
-    padding: 12px 20px;
-    font-size: 1rem;
+    align-self: flex-start;
+    padding: 10px 18px;
+    font-size: 0.95rem;
     background: linear-gradient(135deg, #40c4ff, #18ffff);
-    color: #ffffff;
+    color: #0b0c10;
     border: none;
     border-radius: 8px;
     text-decoration: none;
-    font-weight: bold;
+    font-weight: 600;
     transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    box-shadow: 0 4px 10px rgba(64, 196, 255, 0.4);
+    box-shadow: 0 4px 10px rgba(64, 196, 255, 0.3);
 }
 
 .product-card .cta-button:hover {
     background: linear-gradient(135deg, #18ffff, #40c4ff);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(64, 196, 255, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(64, 196, 255, 0.4);
 }

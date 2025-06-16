@@ -1,393 +1,355 @@
-/* 🌙 General Reset */
-html, body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Arial', sans-serif;
-    background: #0a0f1c;
-    color: #e0e0e0;
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --accent: #3abefc;
+  --accent-light: #56e0ff;
+  --text-light: #e0f7ff;
+  --text-muted: #99aab5;
+  --text-dark: #0e1117;
+  --radius: 16px;
+  --shadow: rgba(0, 0, 0, 0.5);
 }
 
-/* 🔹 Sidebar */
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #0a0d12, #141c27);
+  color: var(--text-light);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ───── Sidebar ───── */
 .dashboard-sidebar {
-    width: 250px;
-    background: #101828;
-    position: fixed;
-    height: 100vh;
-    transition: width 0.3s ease;
+  width: 260px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 2px 0 10px var(--shadow);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  position: fixed;
+  height: 100vh;
 }
 
 .sidebar-header {
-    display: flex;
-    align-items: center;
-    padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .sidebar-header img {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
 }
 
 .sidebar-header h3 {
-    flex-grow: 1;
-    margin-left: 10px;
+  color: var(--accent);
+  font-weight: 600;
 }
 
-.sidebar-header button {
-    background: none;
-    border: none;
-    color: #e0e0e0;
-    font-size: 1.5rem;
-    cursor: pointer;
-}
-
-/* Sidebar Links */
 .dashboard-sidebar ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .dashboard-sidebar li {
-    padding: 15px 20px;
+  margin-bottom: 16px;
 }
 
-.dashboard-sidebar li a {
-    text-decoration: none;
-    color: #b0b0b0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.dashboard-sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  color: var(--text-light);
+  text-decoration: none;
+  transition: 0.3s ease;
 }
 
-.dashboard-sidebar li a:hover {
-    color: #40bfff;
+.dashboard-sidebar li.active a,
+.dashboard-sidebar a:hover {
+  background: linear-gradient(to right, var(--glass-bg), transparent);
+  border-left: 4px solid var(--accent);
+  padding-left: 20px;
+  color: var(--accent-light);
 }
 
-/* 🔹 Main Content */
+.dashboard-sidebar h3 {
+  font-size: 1rem;
+  margin-top: 30px;
+  color: var(--text-muted);
+}
+
+/* ───── Main Content ───── */
 .dashboard-content {
-    margin-left: 250px;
-    padding: 40px;
+  flex-grow: 1;
+  margin-left: 260px;
+  padding: 40px;
 }
 
-/* Header */
 .dashboard-header {
-    background: #141e30;
-    padding: 20px;
-    border-radius: 10px;
-    text-align: center;
+  background: linear-gradient(135deg, #1a2332, #101828);
+  padding: 30px;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px var(--shadow);
+  text-align: center;
 }
 
-/* Quick Actions */
+.dashboard-header h1 {
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.dashboard-header p {
+  color: var(--text-muted);
+}
+
+/* ───── Quick Actions ───── */
 .quick-actions {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
+  display: flex;
+  gap: 16px;
+  margin: 30px 0;
+  flex-wrap: wrap;
 }
 
 .quick-actions button {
-    padding: 10px 15px;
-    background: #40c4ff;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 1rem;
+  border-radius: var(--radius);
+  border: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  color: var(--text-dark);
+  box-shadow: 0 6px 20px var(--shadow);
+  cursor: pointer;
+  transition: 0.3s ease;
 }
 
 .quick-actions button:hover {
-    background: #18ffff;
+  transform: scale(1.05);
 }
 
-/* 🔹 Card-based Sections */
+/* ───── Cards ───── */
 .card {
-    background: #1a2332;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    margin-bottom: 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  padding: 30px;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px var(--shadow);
+  margin-bottom: 30px;
+  transition: 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(64, 196, 255, 0.2);
 }
 
 .card h2 {
-    margin-bottom: 10px;
+  color: var(--accent);
+  margin-bottom: 20px;
 }
 
-/* Data Control Toggles */
-.privacy-options {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+/* ───── Profile Details ───── */
+.profile-details p {
+  margin-bottom: 10px;
 }
 
-.toggle-option {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    background: #101828;
-    border-radius: 5px;
+.edit-button {
+  margin-top: 20px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
+.edit-button:hover {
+  background: var(--accent);
+  color: var(--text-dark);
+}
 
-/* 🔹 Tab Navigation */
+/* ───── Tabs ───── */
 .tab-container {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
 }
 
 .tab {
-    padding: 10px 15px;
-    background: #101828;
-    border: none;
-    color: #e0e0e0;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: background 0.3s;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--glass-bg);
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
 }
 
 .tab.active {
-    background: #40bfff;
-    color: #0a0a0a;
+  background: var(--accent);
+  color: var(--text-dark);
 }
 
-/* 🔹 Privacy Content Sections */
+/* ───── Privacy Content ───── */
 .privacy-content {
-    display: none;
-    padding: 15px;
-    background: #1a2332;
-    border-radius: 5px;
+  display: none;
+  margin-top: 20px;
 }
 
 .privacy-content.active {
-    display: block;
+  display: block;
 }
 
-/* 🔹 Toggle Options */
 .toggle-option {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    background: #101828;
-    border-radius: 5px;
-    margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: var(--glass-bg);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px var(--shadow);
 }
 
-/* 🔹 Tooltip Styling */
+.toggle-option label {
+  color: var(--text-light);
+}
+
 .tooltip {
-    cursor: pointer;
-    display: inline-block;
-    font-size: 14px;
-    margin-left: 5px;
-    color: #40bfff;
-    position: relative;
+  margin-left: 8px;
+  cursor: pointer;
+  color: var(--accent);
+  position: relative;
 }
 
 .tooltip::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    left: 50%;
-    bottom: 125%;
-    transform: translateX(-50%);
-    width: 250px;
-    background: rgba(0, 0, 0, 0.85);
-    color: #fff;
-    padding: 8px;
-    border-radius: 5px;
-    font-size: 12px;
-    text-align: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 140%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0a0a0a;
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  opacity: 0;
+  visibility: hidden;
+  width: 250px;
+  text-align: center;
+  font-size: 0.8rem;
+  transition: 0.3s ease;
 }
 
 .tooltip:hover::after {
-    opacity: 1;
-    visibility: visible;
+  opacity: 1;
+  visibility: visible;
 }
 
-/* 🔒 Security Settings Section */
-.security-settings {
-    background: rgba(15, 20, 30, 0.95);
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-    font-size: 1rem;
-    text-align: left;
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-/* Security Header */
-.security-settings h2 {
-    color: #40c4ff;
-    font-size: 1.6rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-/* Security Description */
-.security-settings p {
-    color: #b0b0b0;
-    font-size: 1rem;
-    margin-bottom: 20px;
-}
-
-/* 🔘 Security Buttons */
-.security-settings button {
-    background: linear-gradient(135deg, #192229, #141e30);
-    color: #e0e0e0;
-    padding: 12px 20px;
-    font-size: 1rem;
-    font-weight: bold;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    border: 1px solid rgba(64, 196, 255, 0.4);
-    margin-top: 10px;
-    width: auto;
-}
-
-/* Button Hover Effects */
-.security-settings button:hover {
-    background: linear-gradient(135deg, #1e2935, #243447);
-    transform: translateY(-2px);
-    box-shadow: 0px 0px 10px rgba(64, 196, 255, 0.6);
-    border: 1px solid rgba(64, 196, 255, 0.8);
-}
-
-/* Add spacing between buttons */
-.security-settings button + button {
-    margin-left: 10px;
-}
-
-/* 📱 Responsive Fixes */
-@media (max-width: 768px) {
-    .security-settings {
-        text-align: center;
-        align-items: center;
-    }
-
-    .security-settings button {
-        width: 100%;
-        margin-top: 10px;
-    }
-
-    .security-settings button + button {
-        margin-left: 0;
-        margin-top: 10px;
-    }
-}
-
-
-/* 🔒 Change Password Modal */
+/* ───── Modal ───── */
 .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    justify-content: center;
-    align-items: center;
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  justify-content: center;
+  align-items: center;
 }
 
-/* Modal Content */
 .modal-content {
-    background: #141e30;
-    padding: 30px;
-    border-radius: 12px;
-    width: 450px;
-    box-shadow: 0px 0px 15px rgba(64, 196, 255, 0.8);
-    text-align: center;
-    animation: fadeIn 0.3s ease-in-out;
-    position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  padding: 30px;
+  width: 100%;
+  max-width: 480px;
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  position: relative;
 }
 
-/* Close Button */
-.modal .close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 22px;
-    cursor: pointer;
-    color: #ff5252;
-    transition: color 0.3s ease;
-}
-
-.modal .close:hover {
-    color: #ff1744;
-}
-
-/* Modal Headings */
 .modal-content h2 {
-    color: #40c4ff;
-    font-weight: bold;
-    margin-bottom: 15px;
+  color: var(--accent);
+  margin-bottom: 16px;
 }
 
-/* Description */
-.modal-content p {
-    font-size: 14px;
-    color: #b0b0b0;
-    margin-bottom: 20px;
-}
-
-/* Input Fields */
 .modal-content label {
-    display: block;
-    text-align: left;
-    margin-top: 12px;
-    color: #e0e0e0;
-    font-size: 14px;
-    font-weight: bold;
+  font-weight: 600;
+  display: block;
+  margin: 12px 0 6px;
 }
 
-/* Styled Inputs */
 .modal-content input {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border: 1px solid #40c4ff;
-    background: #0a0a0a;
-    color: #e0e0e0;
-    border-radius: 5px;
-    font-size: 16px;
-    outline: none;
-    transition: border 0.3s ease;
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  background: #0e1117;
+  color: var(--text-light);
+  border: 1px solid var(--accent);
+  outline: none;
+  font-size: 1rem;
 }
 
-.modal-content input:focus {
-    border: 1px solid #18ffff;
-    box-shadow: 0 0 8px rgba(24, 255, 255, 0.5);
-}
-
-/* 🔥 Save Button */
 .modal-content .save-button {
-    margin-top: 25px;
-    background: linear-gradient(135deg, #40c4ff, #18ffff);
-    color: #0a0a0a;
-    padding: 12px 24px;
-    font-size: 16px;
-    font-weight: bold;
-    text-transform: uppercase;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.3s ease, transform 0.2s ease;
+  margin-top: 20px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  color: var(--text-dark);
+  font-weight: bold;
+  text-transform: uppercase;
+  border: none;
+  padding: 12px;
+  width: 100%;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.modal-content .close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 1.2rem;
+  color: #ff4b5c;
+  cursor: pointer;
+}
+
+/* ───── Responsive ───── */
+@media (max-width: 768px) {
+  .dashboard-container {
+    flex-direction: column;
+  }
+
+  .dashboard-sidebar {
+    position: static;
     width: 100%;
-    border: none;
-}
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-around;
+  }
 
-.modal-content .save-button:hover {
-    background: linear-gradient(135deg, #18ffff, #40c4ff);
-    transform: translateY(-2px);
-}
+  .dashboard-content {
+    margin-left: 0;
+    padding: 20px;
+  }
 
-/* 📱 Mobile Responsive */
-@media (max-width: 480px) {
-    .modal-content {
-        width: 90%;
-    }
-}
+  .quick-actions {
+    flex-direction: column;
+  }
 
+  .quick-actions button {
+    width: 100%;
+  }
+
+  .modal-content {
+    width: 90%;
+  }
+}
