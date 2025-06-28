@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://musefuzestudios.com/sitemap.xml
