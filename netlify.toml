@@ -1,0 +1,98 @@
+[build]
+  publish = "dist"
+  command = "npm run build:production"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# For musefuzestudios.com - proxy API to your VPS backend
+[[redirects]]
+  from = "/api/*"
+  to = "https://musefuzestudios.com:5000/api/:splat"
+  status = 200
+  force = true
+  headers = {Access-Control-Allow-Origin = "*"}
+
+# Alternative: If you have a separate API subdomain
+# [[redirects]]
+#   from = "/api/*"
+#   to = "https://api.musefuzestudios.com/api/:splat"
+#   status = 200
+#   force = true
+
+# Security redirects - block common attack patterns
+[[redirects]]
+  from = "/.env*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/.git/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/config/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+# Force HTTPS and remove www
+[[redirects]]
+  from = "http://musefuzestudios.com/*"
+  to = "https://musefuzestudios.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "http://www.musefuzestudios.com/*"
+  to = "https://musefuzestudios.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.musefuzestudios.com/*"
+  to = "https://musefuzestudios.com/:splat"
+  status = 301
+  force = true
+
+# SPA fallback for client-side routing (must be last)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Environment variables for different contexts
+[context.production.environment]
+  VITE_API_URL = "https://musefuzestudios.com/api"
+  NODE_ENV = "production"
+
+[context.deploy-preview.environment]
+  VITE_API_URL = "https://musefuzestudios.com/api"
+  NODE_ENV = "staging"
+
+# Headers for security and CORS
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), ambient-light-sensor=()"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    Access-Control-Allow-Credentials = "true"

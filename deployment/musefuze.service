@@ -1,0 +1,15 @@
+[Unit]
+Description=MuseFuze Studios Web Application
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/musefuze
+ExecStart=/usr/bin/node server/index.js
+Restart=on-failure
+RestartSec=10
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
