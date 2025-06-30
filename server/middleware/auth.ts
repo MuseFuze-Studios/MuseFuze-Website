@@ -8,31 +8,44 @@ declare module 'express-session' {
   }
 }
 
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+// Optional: define types for request/response bodies
+type MyBodyType = Record<string, unknown>; // or a specific shape
+type MyResponseType = { error: string };
+
+// Middleware to require authentication
+export const requireAuth = (
+  req: Request<any, any, MyBodyType>,
+  res: Response<MyResponseType>,
+  next: NextFunction
+) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: 'Authentication required' });
   }
   next();
 };
 
+// Middleware to require a specific role or roles
 export const requireRole = (roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (
+    req: Request<any, any, MyBodyType>,
+    res: Response<MyResponseType>,
+    next: NextFunction
+  ) => {
     if (!req.session.userId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
-    
+
     if (!roles.includes(req.session.role)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
-    
+
     next();
   };
 };
 
+// Specific role checks
 export const requireStaff = requireRole(['dev_tester', 'developer', 'staff', 'admin', 'ceo']);
 export const requireAdmin = requireRole(['admin', 'ceo']);
 export const requireCEO = requireRole(['ceo']);
-
-// Enhanced role checking for specific features
 export const requireDeveloper = requireRole(['developer', 'admin', 'ceo']);
 export const requireDevTester = requireRole(['dev_tester', 'developer', 'staff', 'admin', 'ceo']);
