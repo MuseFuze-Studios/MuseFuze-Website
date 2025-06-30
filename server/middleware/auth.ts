@@ -14,7 +14,7 @@ type MyResponseType = { error: string };
 
 // Middleware to require authentication
 export const requireAuth = (
-  req: Request<any, any, MyBodyType>,
+  req: Request<Record<string, unknown>, MyResponseType, MyBodyType>,
   res: Response<MyResponseType>,
   next: NextFunction
 ) => {
@@ -27,7 +27,7 @@ export const requireAuth = (
 // Middleware to require a specific role or roles
 export const requireRole = (roles: string[]) => {
   return (
-    req: Request<any, any, MyBodyType>,
+    req: Request<Record<string, unknown>, MyResponseType, MyBodyType>,
     res: Response<MyResponseType>,
     next: NextFunction
   ) => {

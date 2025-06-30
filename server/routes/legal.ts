@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
+import { RowDataPacket } from 'mysql2/promise';
 import { getDB } from '../config/database.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -11,14 +12,14 @@ router.get('/documents/:type', async (req, res, next) => {
     const { type } = req.params;
     const db = getDB();
 
-    const [documents] = await db.execute(`
-      SELECT * FROM legal_documents 
-      WHERE document_type = ? AND is_active = TRUE 
-      ORDER BY effective_date DESC 
+    const [documents] = await db.execute<RowDataPacket[]>(`
+      SELECT * FROM legal_documents
+      WHERE document_type = ? AND is_active = TRUE
+      ORDER BY effective_date DESC
       LIMIT 1
     `, [type]);
 
-    const document = (documents as any[])[0];
+    const document = documents[0] as RowDataPacket | undefined;
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
     }
@@ -85,12 +86,12 @@ router.get('/consent', requireAuth, async (req, res, next) => {
     const db = getDB();
     const userId = req.session.userId;
 
-    const [users] = await db.execute(`
+    const [users] = await db.execute<RowDataPacket[]>(`
       SELECT data_processing_consent, marketing_consent, cookie_preferences
       FROM users WHERE id = ?
     `, [userId]);
 
-    const user = (users as any[])[0];
+    const user = users[0] as RowDataPacket | undefined;
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -142,8 +143,8 @@ router.post('/delete-account', requireAuth, async (req, res, next) => {
     const userId = req.session.userId;
 
     // Check if user is admin/ceo (prevent accidental deletion)
-    const [users] = await db.execute('SELECT role FROM users WHERE id = ?', [userId]);
-    const user = (users as any[])[0];
+    const [users] = await db.execute<RowDataPacket[]>('SELECT role FROM users WHERE id = ?', [userId]);
+    const user = users[0] as RowDataPacket | undefined;
     
     if (['admin', 'ceo'].includes(user.role)) {
       return res.status(400).json({ 

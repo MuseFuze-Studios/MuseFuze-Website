@@ -3,6 +3,7 @@ import type { CookieConsentContextType } from '../types/cookies';
 
 const CookieConsentContext = createContext<CookieConsentContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCookieConsent = () => {
   const context = useContext(CookieConsentContext);
   if (context === undefined) {

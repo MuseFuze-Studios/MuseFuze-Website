@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
+import { ResultSetHeader } from 'mysql2/promise';
 import { getDB } from '../config/database.js';
 import { requireStaff, requireAdmin } from '../middleware/auth.js';
 
@@ -44,14 +45,14 @@ router.post('/',
       const { title, content, is_sticky, target_roles } = req.body;
       const db = getDB();
 
-      const [result] = await db.execute(`
+      const [result] = await db.execute<ResultSetHeader>(`
         INSERT INTO team_announcements (title, content, author_id, is_sticky, target_roles)
         VALUES (?, ?, ?, ?, ?)
       `, [title, content, req.session.userId, is_sticky, JSON.stringify(target_roles)]);
 
       res.status(201).json({
         message: 'Announcement created successfully',
-        announcementId: (result as any).insertId
+        announcementId: result.insertId
       });
     } catch (error) {
       next(error);
@@ -80,7 +81,7 @@ router.put('/:id',
       const db = getDB();
 
       const updates: string[] = [];
-      const values: any[] = [];
+      const values: unknown[] = [];
 
       if (title !== undefined) {
         updates.push('title = ?');
@@ -123,12 +124,12 @@ router.delete('/:id', requireAdmin, async (req, res, next) => {
     const { id } = req.params;
     const db = getDB();
 
-    const [result] = await db.execute(
+    const [result] = await db.execute<ResultSetHeader>(
       'DELETE FROM team_announcements WHERE id = ?',
       [id]
     );
 
-    if ((result as any).affectedRows === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Announcement not found' });
     }
 

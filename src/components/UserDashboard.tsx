@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Settings, Download, Trash2, Shield, Cookie, FileText } from 'lucide-react';
+import { User, Settings, Download, Trash2, Shield, Cookie } from 'lucide-react';
 
 interface UserProfile {
   id: number;
@@ -10,11 +10,11 @@ interface UserProfile {
   created_at: string;
   data_processing_consent: boolean;
   marketing_consent: boolean;
-  cookie_preferences: any;
+  cookie_preferences: Record<string, unknown>;
 }
 
 const UserDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

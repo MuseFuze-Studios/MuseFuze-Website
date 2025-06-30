@@ -153,7 +153,7 @@ const DashboardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.role]);
+  }, [user]);
 
   useEffect(() => {
     loadDashboardData();
@@ -319,7 +319,11 @@ const DashboardPage: React.FC = () => {
   const handleSaveCookies = async () => {
     try {
       await userAPI.updateCookies({ cookiesAccepted: cookiePref });
-      cookiePref ? acceptCookies() : declineCookies();
+      if (cookiePref) {
+        acceptCookies();
+      } else {
+        declineCookies();
+      }
       setUserData(prev => prev ? { ...prev, cookiesAccepted: cookiePref } : prev);
       setShowCookieModal(false);
     } catch (error) {
