@@ -51,9 +51,9 @@ router.get('/builds', authenticateToken, requireStaff, async (req, res) => {
     const [builds] = await pool.execute(`
       SELECT gb.*, u.firstName, u.lastName 
       FROM game_builds gb 
-      JOIN users u ON gb.uploadedBy = u.id 
+      JOIN users u ON gb.uploaded_by = u.id
       WHERE gb.isActive = TRUE 
-      ORDER BY gb.uploadDate DESC
+      ORDER BY gb.upload_date DESC
     `);
 
     res.json({ builds });
@@ -66,7 +66,8 @@ router.get('/builds', authenticateToken, requireStaff, async (req, res) => {
 // Upload game build
 router.post('/builds', authenticateToken, requireStaff, upload.single('buildFile'), validateGameBuild, handleValidationErrors, async (req, res) => {
   try {
-    const { name, version, description, externalUrl } = req.body;
+    const { name, version, description } = req.body;
+    const externalUrl = req.body.externalUrl ?? null;
     const fileUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     if (!fileUrl && !externalUrl) {
@@ -74,7 +75,7 @@ router.post('/builds', authenticateToken, requireStaff, upload.single('buildFile
     }
 
     const [result] = await pool.execute(
-      'INSERT INTO game_builds (name, version, description, fileUrl, externalUrl, uploadedBy) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO game_builds (build_name, version, description, fileUrl, externalUrl, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)',
       [name, version, description, fileUrl, externalUrl, req.user.id]
     );
 
@@ -102,7 +103,7 @@ router.delete('/builds/:id', authenticateToken, requireStaff, async (req, res) =
 
     // Check if build exists and user owns it
     const [builds] = await pool.execute(
-      'SELECT uploadedBy FROM game_builds WHERE id = ? AND isActive = TRUE',
+      'SELECT uploaded_by FROM game_builds WHERE id = ? AND isActive = TRUE',
       [buildId]
     );
 
@@ -110,7 +111,7 @@ router.delete('/builds/:id', authenticateToken, requireStaff, async (req, res) =
       return res.status(404).json({ error: 'Build not found' });
     }
 
-    if (builds[0].uploadedBy !== req.user.id) {
+    if (builds[0].uploaded_by !== req.user.id) {
       return res.status(403).json({ error: 'You can only delete your own builds' });
     }
 

@@ -62,14 +62,15 @@ async function createTables() {
         description TEXT,
         fileUrl VARCHAR(500),
         externalUrl VARCHAR(500),
-        uploadedBy INT NOT NULL,
-        uploadDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        uploaded_by INT NOT NULL,
+        upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         isActive BOOLEAN DEFAULT TRUE,
-        FOREIGN KEY (uploadedBy) REFERENCES users(id) ON DELETE CASCADE,
-        INDEX idx_uploaded_by (uploadedBy),
-        INDEX idx_upload_date (uploadDate)
+        FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_uploaded_by (uploaded_by),
+        INDEX idx_upload_date (upload_date)
       )
     `);
+
 
     // Message board posts table
     await pool.execute(`

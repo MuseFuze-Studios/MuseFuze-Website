@@ -38,7 +38,7 @@ router.get('/data', authenticateToken, async (req, res) => {
     let gameBuilds = [];
     if (req.user.isStaff) {
       const [builds] = await pool.execute(
-        'SELECT id, name, version, description, uploadDate FROM game_builds WHERE uploadedBy = ?',
+        'SELECT id, name, version, description, uploadDate FROM game_builds WHERE uploaded_by = ?',
         [userId]
       );
       gameBuilds = builds;
