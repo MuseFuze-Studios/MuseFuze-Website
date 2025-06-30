@@ -33,7 +33,7 @@ function App() {
                     <DashboardPage />
                   </ProtectedRoute>
                 }
-              />
+                />
               <Route
                 path="/staff"
                 element={
