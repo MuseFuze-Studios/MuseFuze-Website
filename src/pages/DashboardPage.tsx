@@ -26,7 +26,7 @@ interface UserData {
   email: string;
   firstName: string;
   lastName: string;
-  isStaff: boolean;
+  role: string;
   cookiesAccepted: boolean;
   createdAt: string;
 }
@@ -117,7 +117,8 @@ const DashboardPage: React.FC = () => {
 
       setUserData(profileResponse.data.user);
 
-      if (user?.isStaff) {
+      const staffRoles = ['dev_tester', 'developer', 'staff', 'admin', 'ceo'];
+      if (user && staffRoles.includes(user.role)) {
         const [buildsResponse, messagesResponse] = await Promise.all([
           staffAPI.getBuilds(),
           staffAPI.getMessages(),
@@ -131,7 +132,7 @@ const DashboardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.isStaff]);
+  }, [user?.role]);
 
   useEffect(() => {
     loadDashboardData();
@@ -315,7 +316,7 @@ const DashboardPage: React.FC = () => {
               <span className="text-gray-300 font-rajdhani">
                 Welcome, {user?.firstName}
               </span>
-              {user?.isStaff && (
+              {user && ['dev_tester','developer','staff','admin','ceo'].includes(user.role) && (
                 <span className="px-3 py-1 bg-electric/20 text-electric text-sm font-rajdhani font-bold rounded-full border border-electric/30">
                   STAFF
                 </span>
@@ -350,7 +351,7 @@ const DashboardPage: React.FC = () => {
                   <span>Profile</span>
                 </button>
 
-                {user?.isStaff && (
+                {user && ['dev_tester','developer','staff','admin','ceo'].includes(user.role) && (
                   <>
                     <button
                       onClick={() => setActiveTab('builds')}
@@ -435,7 +436,7 @@ const DashboardPage: React.FC = () => {
                           Account Type
                         </label>
                         <div className="px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white font-rajdhani flex items-center">
-                          {userData.isStaff ? (
+                          {['dev_tester','developer','staff','admin','ceo'].includes(userData.role) ? (
                             <>
                               <Shield className="h-4 w-4 text-electric mr-2" />
                               Staff Member
@@ -493,7 +494,7 @@ const DashboardPage: React.FC = () => {
             )}
 
             {/* Dev Builds Tab */}
-            {activeTab === 'builds' && user?.isStaff && (
+            {activeTab === 'builds' && user && ['dev_tester','developer','staff','admin','ceo'].includes(user.role) && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-orbitron font-bold text-white">Development Builds</h2>
@@ -668,7 +669,7 @@ const DashboardPage: React.FC = () => {
             )}
 
             {/* Message Board Tab */}
-            {activeTab === 'messages' && user?.isStaff && (
+            {activeTab === 'messages' && user && ['dev_tester','developer','staff','admin','ceo'].includes(user.role) && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-orbitron font-bold text-white">Staff Message Board</h2>
@@ -858,7 +859,7 @@ const DashboardPage: React.FC = () => {
             )}
 
             {/* Staff Tools Tab */}
-            {activeTab === 'tools' && user?.isStaff && (
+            {activeTab === 'tools' && user && ['dev_tester','developer','staff','admin','ceo'].includes(user.role) && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-orbitron font-bold text-white">Staff Tools</h2>
                 

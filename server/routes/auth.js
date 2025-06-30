@@ -30,9 +30,9 @@ router.post('/register', validateRegistration, handleValidationErrors, async (re
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create user
+    // Create user with default roles
     const [result] = await pool.execute(
-      'INSERT INTO users (email, password, firstName, lastName, cookiesAccepted) VALUES (?, ?, ?, ?, ?)',
+      "INSERT INTO users (email, password, firstName, lastName, cookiesAccepted, role) VALUES (?, ?, ?, ?, ?, 'user')",
       [email, hashedPassword, firstName, lastName, cookiesAccepted]
     );
 
@@ -58,7 +58,7 @@ router.post('/register', validateRegistration, handleValidationErrors, async (re
         email,
         firstName,
         lastName,
-        isStaff: false
+        role: 'user'
       }
     });
   } catch (error) {
@@ -74,7 +74,7 @@ router.post('/login', validateLogin, handleValidationErrors, async (req, res) =>
 
     // Find user
     const [users] = await pool.execute(
-      'SELECT id, email, password, firstName, lastName, isStaff, isActive FROM users WHERE email = ?',
+      "SELECT id, email, password, firstName, lastName, role, isActive FROM users WHERE email = ?",
       [email]
     );
 
@@ -116,7 +116,7 @@ router.post('/login', validateLogin, handleValidationErrors, async (req, res) =>
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        isStaff: user.isStaff
+        role: user.role
       }
     });
   } catch (error) {
@@ -139,7 +139,7 @@ router.get('/me', authenticateToken, (req, res) => {
       email: req.user.email,
       firstName: req.user.firstName,
       lastName: req.user.lastName,
-      isStaff: req.user.isStaff
+      role: req.user.role
     }
   });
 });

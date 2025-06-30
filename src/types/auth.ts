@@ -3,7 +3,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  isStaff: boolean;
+  role: string;
 }
 
 export interface RegisterData {

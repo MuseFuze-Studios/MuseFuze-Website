@@ -21,7 +21,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireStaff 
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requireStaff && !user.isStaff) {
+  if (requireStaff && !['dev_tester','developer','staff','admin','ceo'].includes(user.role)) {
     return <Navigate to="/dashboard" replace />;
   }
 

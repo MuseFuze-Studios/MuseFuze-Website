@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const [users] = await pool.execute(
-      'SELECT id, email, firstName, lastName, isStaff, cookiesAccepted, createdAt FROM users WHERE id = ?',
+      "SELECT id, email, firstName, lastName, role, cookiesAccepted, createdAt FROM users WHERE id = ?",
       [req.user.id]
     );
 
@@ -30,13 +30,14 @@ router.get('/data', authenticateToken, async (req, res) => {
 
     // Get user data
     const [userData] = await pool.execute(
-      'SELECT id, email, firstName, lastName, isStaff, cookiesAccepted, createdAt, updatedAt FROM users WHERE id = ?',
+      "SELECT id, email, firstName, lastName, role, cookiesAccepted, createdAt, updatedAt FROM users WHERE id = ?",
       [userId]
     );
 
     // Get user's game builds (if staff)
+    const staffRoles = ['dev_tester', 'developer', 'staff', 'admin', 'ceo'];
     let gameBuilds = [];
-    if (req.user.isStaff) {
+    if (staffRoles.includes(req.user.role)) {
       const [builds] = await pool.execute(
         'SELECT id, name, version, description, upload_date AS uploadDate FROM game_builds WHERE uploaded_by = ?',
         [userId]
@@ -46,7 +47,7 @@ router.get('/data', authenticateToken, async (req, res) => {
 
     // Get user's message posts (if staff)
     let messagePosts = [];
-    if (req.user.isStaff) {
+    if (staffRoles.includes(req.user.role)) {
       const [posts] = await pool.execute(
         'SELECT id, title, content, createdAt, updatedAt FROM message_posts WHERE authorId = ?',
         [userId]

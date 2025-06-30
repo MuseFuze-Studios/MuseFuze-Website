@@ -27,6 +27,7 @@
     "package:deployment": "node scripts/package-deployment.js",
     "setup:production": "node scripts/setup-production.js",
     "diagnose:mysql": "node scripts/diagnose-mysql.js",
+    "migrate:db": "node scripts/migrate-role.js",
     "start": "NODE_ENV=production node server/index.js"
   },
   "dependencies": {

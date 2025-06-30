@@ -13,7 +13,7 @@ export const authenticateToken = async (req, res, next) => {
     
     // Verify user still exists and is active
     const [users] = await pool.execute(
-      'SELECT id, email, firstName, lastName, isStaff, isActive FROM users WHERE id = ? AND isActive = TRUE',
+      "SELECT id, email, firstName, lastName, role, isActive FROM users WHERE id = ? AND isActive = TRUE",
       [decoded.userId]
     );
 
@@ -35,9 +35,14 @@ export const authenticateToken = async (req, res, next) => {
   }
 };
 
-export const requireStaff = (req, res, next) => {
-  if (!req.user.isStaff) {
-    return res.status(403).json({ error: 'Access denied. Staff privileges required.' });
-  }
-  next();
+export const requireRole = (roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Access denied. Insufficient privileges.' });
+    }
+    next();
+  };
 };
+
+export const requireStaff = requireRole(['dev_tester', 'developer', 'staff', 'admin', 'ceo']);
+export const requireAdmin = requireRole(['admin', 'ceo']);

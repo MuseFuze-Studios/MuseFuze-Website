@@ -43,13 +43,13 @@ async function createTables() {
         password VARCHAR(255) NOT NULL,
         firstName VARCHAR(100) NOT NULL,
         lastName VARCHAR(100) NOT NULL,
-        isStaff BOOLEAN DEFAULT FALSE,
+        role ENUM('user','dev_tester','developer','staff','admin','ceo') DEFAULT 'user',
         isActive BOOLEAN DEFAULT TRUE,
         cookiesAccepted BOOLEAN DEFAULT FALSE,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_email (email),
-        INDEX idx_staff (isStaff)
+        INDEX idx_role (role)
       )
     `);
 
