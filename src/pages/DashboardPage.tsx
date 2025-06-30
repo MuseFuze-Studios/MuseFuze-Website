@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { userAPI, staffAPI } from '../services/api';
+import { Link } from 'react-router-dom';
 import { 
   User, 
   LogOut, 
@@ -16,7 +17,8 @@ import {
   Shield,
   Reply,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Crown
 } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UploadProgress from '../components/UploadProgress';
@@ -396,6 +398,16 @@ const DashboardPage: React.FC = () => {
                       <span>Staff Tools</span>
                     </button>
                   </>
+                )}
+
+                {user && ['admin','ceo'].includes(user.role) && (
+                  <Link
+                    to="/admin"
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 font-rajdhani text-gray-300 hover:bg-white/10"
+                  >
+                    <Crown className="h-5 w-5" />
+                    <span>Admin Panel</span>
+                  </Link>
                 )}
               </nav>
             </div>
