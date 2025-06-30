@@ -14,6 +14,7 @@ interface SystemLog {
 const SystemLogs: React.FC = () => {
   const [logs, setLogs] = useState<SystemLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
 
   useEffect(() => {
     fetchLogs();
@@ -51,6 +52,12 @@ const SystemLogs: React.FC = () => {
     return 'text-gray-400 bg-gray-900/30';
   };
 
+  const filteredLogs = logs.filter((log) =>
+    [log.username, log.action, log.details].some((field) =>
+      field?.toLowerCase().includes(filter.toLowerCase())
+    )
+  );
+
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center">
@@ -66,14 +73,24 @@ const SystemLogs: React.FC = () => {
         <p className="text-gray-400">Recent system activity and user actions (last 100 entries)</p>
       </div>
 
+      <div className="mb-6">
+        <input
+          type="text"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filter logs"
+          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+        />
+      </div>
+
       <div className="space-y-4">
-        {logs.length === 0 ? (
+        {filteredLogs.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">No system logs found</p>
           </div>
         ) : (
-          logs.map((log) => (
+          filteredLogs.map((log) => (
             <div
               key={log.id}
               className="bg-gray-700/30 rounded-lg p-6 border border-gray-600 hover:border-amber-500/50 transition-all"

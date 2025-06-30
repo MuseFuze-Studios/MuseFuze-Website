@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Edit, Trash2, Shield, User, Crown } from 'lucide-react';
+import { Users, Edit, Trash2, Shield, User, Crown, Pencil } from 'lucide-react';
 
 interface User {
   id: number;
@@ -14,6 +14,8 @@ const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [detailsUser, setDetailsUser] = useState<User | null>(null);
+  const [detailsForm, setDetailsForm] = useState({ username: '', email: '' });
 
   useEffect(() => {
     fetchUsers();
@@ -81,6 +83,33 @@ const UserManagement: React.FC = () => {
       alert('Failed to delete user');
     }
   };
+
+  
+  const handleUpdateDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detailsUser) return;
+    try {
+      const response = await fetch(`http://localhost:5000/api/admin/users/${detailsUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(detailsForm),
+      });
+      if (response.ok) {
+        fetchUsers();
+        setDetailsUser(null);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to update user');
+      }
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      alert('Failed to update user');
+    }
+  };
+
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -156,6 +185,50 @@ const UserManagement: React.FC = () => {
         </div>
       )}
 
+            {/* Edit Details Modal */}
+      {detailsUser && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl p-8 max-w-md w-full">
+            <h3 className="text-2xl font-bold text-white mb-6">Edit User Details</h3>
+            <form onSubmit={handleUpdateDetails} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                <input
+                  type="text"
+                  value={detailsForm.username}
+                  onChange={(e) => setDetailsForm({ ...detailsForm, username: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={detailsForm.email}
+                  onChange={(e) => setDetailsForm({ ...detailsForm, email: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div className="flex justify-end space-x-4 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDetailsUser(null)}
+                  className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-lg transition-all"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Users Table */}
       <div className="bg-gray-800/30 rounded-xl border border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
@@ -197,6 +270,18 @@ const UserManagement: React.FC = () => {
                       >
                         <Edit className="h-4 w-4" />
                       </button>
+
+                      <button
+                        onClick={() => {
+                          setDetailsUser(user);
+                          setDetailsForm({ username: user.username, email: user.email });
+                        }}
+                        className="p-2 text-gray-400 hover:text-blue-400 transition-colors"
+                        title="Edit Details"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      
                       <button
                         onClick={() => handleDeleteUser(user.id)}
                         className="p-2 text-gray-400 hover:text-red-400 transition-colors"
