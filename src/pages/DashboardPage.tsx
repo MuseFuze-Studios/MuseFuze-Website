@@ -18,10 +18,14 @@ import {
   Reply,
   ChevronDown,
   ChevronUp,
-  Crown
+  Crown,
+  Edit,
+  Cookie,
+  X,
 } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UploadProgress from '../components/UploadProgress';
+import { useCookieConsent } from '../contexts/CookieConsentContext';
 
 interface UserData {
   id: number;
@@ -104,6 +108,15 @@ const DashboardPage: React.FC = () => {
     content: '',
   });
 
+  // Profile editing
+  const [editProfile, setEditProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', email: '' });
+  const [showCookieModal, setShowCookieModal] = useState(false);
+  const [cookiePref, setCookiePref] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const { acceptCookies, declineCookies } = useCookieConsent();
+
   // Reply forms
   const [replyForms, setReplyForms] = useState<Record<number, { content: string }>>({});
   const [showReplyForm, setShowReplyForm] = useState<number | null>(null);
@@ -118,6 +131,12 @@ const DashboardPage: React.FC = () => {
       ]);
 
       setUserData(profileResponse.data.user);
+      setProfileForm({
+        firstName: profileResponse.data.user.firstName,
+        lastName: profileResponse.data.user.lastName,
+        email: profileResponse.data.user.email,
+      });
+
 
       const staffRoles = ['dev_tester', 'developer', 'staff', 'admin', 'ceo'];
       if (user && staffRoles.includes(user.role)) {
@@ -286,6 +305,38 @@ const DashboardPage: React.FC = () => {
     setExpandedPosts(newExpanded);
   };
 
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await userAPI.updateProfile(profileForm);
+      setEditProfile(false);
+      loadDashboardData();
+    } catch (error) {
+      console.error('Profile update failed:', error);
+    }
+  };
+
+  const handleSaveCookies = async () => {
+    try {
+      await userAPI.updateCookies({ cookiesAccepted: cookiePref });
+      cookiePref ? acceptCookies() : declineCookies();
+      setUserData(prev => prev ? { ...prev, cookiesAccepted: cookiePref } : prev);
+      setShowCookieModal(false);
+    } catch (error) {
+      console.error('Failed to update cookie preferences:', error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await userAPI.deleteAccount();
+      await logout();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+    }
+  };
+
   const deleteBuild = async (id: number) => {
     if (confirm('Are you sure you want to delete this build?')) {
       try {
@@ -418,36 +469,82 @@ const DashboardPage: React.FC = () => {
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="space-y-6">
-                <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
-                  <h2 className="text-2xl font-orbitron font-bold mb-6 text-white">Profile Information</h2>
-                  
+                <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10">                  
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-orbitron font-bold text-white">Profile Information</h2>
+                    <button
+                      onClick={() => {
+                        if (editProfile) {
+                          setEditProfile(false);
+                          setProfileForm({
+                            firstName: userData?.firstName || '',
+                            lastName: userData?.lastName || '',
+                            email: userData?.email || '',
+                          });
+                        } else {
+                          setEditProfile(true);
+                        }
+                      }}
+                      className="flex items-center space-x-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      {editProfile ? <><X className="h-4 w-4" /><span className="font-rajdhani">Cancel</span></> : <><Edit className="h-4 w-4" /><span className="font-rajdhani">Edit</span></>}
+                    </button>
+                  </div>
+
                   {userData && (
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <form onSubmit={handleProfileUpdate} className="grid md:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-rajdhani font-medium text-gray-200 mb-2">
                           First Name
                         </label>
-                        <div className="px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white font-rajdhani">
-                          {userData.firstName}
-                        </div>
+                        {editProfile ? (
+                          <input
+                            type="text"
+                            value={profileForm.firstName}
+                            onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                            className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric/20 focus:border-electric transition-colors duration-200 font-rajdhani text-white placeholder-gray-400"
+                          />
+                        ) : (
+                          <div className="px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white font-rajdhani">
+                            {userData.firstName}
+                          </div>
+                        )}
                       </div>
 
                       <div>
                         <label className="block text-sm font-rajdhani font-medium text-gray-200 mb-2">
                           Last Name
                         </label>
-                        <div className="px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white font-rajdhani">
-                          {userData.lastName}
-                        </div>
+                        {editProfile ? (
+                          <input
+                            type="text"
+                            value={profileForm.lastName}
+                            onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                            className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric/20 focus:border-electric transition-colors duration-200 font-rajdhani text-white placeholder-gray-400"
+                          />
+                        ) : (
+                          <div className="px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white font-rajdhani">
+                            {userData.lastName}
+                          </div>
+                        )}
                       </div>
 
                       <div className="md:col-span-2">
                         <label className="block text-sm font-rajdhani font-medium text-gray-200 mb-2">
                           Email Address
                         </label>
-                        <div className="px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white font-rajdhani">
-                          {userData.email}
-                        </div>
+                        {editProfile ? (
+                          <input
+                            type="email"
+                            value={profileForm.email}
+                            onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                            className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric/20 focus:border-electric transition-colors duration-200 font-rajdhani text-white placeholder-gray-400"
+                          />
+                        ) : (
+                          <div className="px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white font-rajdhani">
+                            {userData.email}
+                          </div>
+                        )}
                       </div>
 
                       <div>
@@ -478,7 +575,17 @@ const DashboardPage: React.FC = () => {
                           {new Date(userData.createdAt).toLocaleDateString()}
                         </div>
                       </div>
-                    </div>
+                    {editProfile && (
+                        <div className="flex space-x-4 md:col-span-2">
+                          <button
+                            type="submit"
+                            className="px-6 py-3 bg-gradient-to-r from-electric to-neon text-black font-rajdhani font-bold rounded-lg hover:shadow-xl hover:shadow-electric/25 transition-all duration-300"
+                          >
+                            Save Changes
+                          </button>
+                        </div>
+                      )}
+                    </form>
                   )}
                 </div>
 
@@ -508,6 +615,28 @@ const DashboardPage: React.FC = () => {
                     <Download className="h-4 w-4 mr-2" />
                     Download My Data
                   </button>
+
+                  <div className="mt-6 flex flex-col sm:flex-row gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCookiePref(userData?.cookiesAccepted ?? false);
+                        setShowCookieModal(true);
+                      }}
+                      className="inline-flex items-center px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors font-rajdhani"
+                    >
+                      <Cookie className="h-4 w-4 mr-2" />
+                      Cookie Preferences
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-rajdhani"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Account
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -904,6 +1033,62 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+      {showCookieModal && (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <div className="bg-gray-800 rounded-2xl p-8 max-w-md w-full">
+          <h3 className="text-2xl font-bold text-white mb-6">Cookie Preferences</h3>
+          <div className="flex justify-between items-center mb-6">
+            <span className="text-white font-rajdhani">Allow cookies</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={cookiePref}
+                onChange={(e) => setCookiePref(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-electric"></div>
+            </label>
+          </div>
+          <div className="flex justify-end space-x-4">
+            <button
+              onClick={() => setShowCookieModal(false)}
+              className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveCookies}
+              className="px-6 py-3 bg-gradient-to-r from-electric to-neon text-black font-rajdhani font-bold rounded-lg hover:shadow-xl hover:shadow-electric/25 transition-all duration-300"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {showDeleteConfirm && (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <div className="bg-gray-800 rounded-2xl p-8 max-w-md w-full">
+          <h3 className="text-2xl font-bold text-white mb-4">Delete Account</h3>
+          <p className="text-gray-300 mb-6">Are you sure you want to delete your account? This action cannot be undone.</p>
+          <div className="flex justify-end space-x-4">
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteAccount}
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 };

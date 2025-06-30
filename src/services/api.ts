@@ -148,6 +148,11 @@ export const authAPI = {
 export const userAPI = {
   getProfile: () => api.get('/users/profile'),
   getUserData: () => api.get('/users/data'),
+  updateProfile: (data: { firstName?: string; lastName?: string; email?: string }) =>
+    api.put('/users/profile', data),
+  updateCookies: (data: { cookiesAccepted: boolean }) =>
+    api.put('/users/cookies', data),
+  deleteAccount: () => api.post('/legal/delete-account'),
 };
 
 // Staff API
