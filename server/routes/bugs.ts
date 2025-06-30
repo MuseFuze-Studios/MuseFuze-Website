@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { ResultSetHeader } from 'mysql2/promise';
 import { getDB } from '../config/database.js';
 import { requireStaff, requireAdmin } from '../middleware/auth.js';
 

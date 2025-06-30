@@ -202,7 +202,7 @@ router.delete('/:id', requireAdmin, async (req, res, next) => {
     // Optionally delete file from filesystem
     try {
       await fs.unlink(build.file_path);
-    } catch (_error) {
+    } catch {
       console.warn('Could not delete file:', build.file_path);
     }
 
