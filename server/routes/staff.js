@@ -75,7 +75,7 @@ router.post('/builds', authenticateToken, requireStaff, upload.single('buildFile
     }
 
     const [result] = await pool.execute(
-      'INSERT INTO game_builds (build_name, version, description, fileUrl, externalUrl, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO game_builds (name, version, description, fileUrl, externalUrl, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)',
       [name, version, description, fileUrl, externalUrl, req.user.id]
     );
 
