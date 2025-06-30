@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { getDB } from '../config/database.js';
 import { requireStaff } from '../middleware/auth.js';
 
@@ -45,33 +46,33 @@ router.post('/',
       const db = getDB();
 
       // Check if build exists
-      const [builds] = await db.execute(
+      const [builds] = await db.execute<RowDataPacket[]>(
         'SELECT id FROM game_builds WHERE id = ? AND is_active = true',
         [build_id]
       );
 
-      if ((builds as any[]).length === 0) {
+      if (builds.length === 0) {
         return res.status(404).json({ error: 'Build not found' });
       }
 
       // Check if user already reviewed this build
-      const [existingReviews] = await db.execute(
+      const [existingReviews] = await db.execute<RowDataPacket[]>(
         'SELECT id FROM reviews WHERE build_id = ? AND reviewer_id = ?',
         [build_id, req.session.userId]
       );
 
-      if ((existingReviews as any[]).length > 0) {
+      if (existingReviews.length > 0) {
         return res.status(409).json({ error: 'You have already reviewed this build' });
       }
 
-      const [result] = await db.execute(`
-        INSERT INTO reviews (build_id, reviewer_id, rating, feedback) 
+      const [result] = await db.execute<ResultSetHeader>(`
+        INSERT INTO reviews (build_id, reviewer_id, rating, feedback)
         VALUES (?, ?, ?, ?)
       `, [build_id, req.session.userId, rating, feedback]);
 
       res.status(201).json({
         message: 'Review created successfully',
-        reviewId: (result as any).insertId
+        reviewId: result.insertId
       });
     } catch (error) {
       next(error);
@@ -98,18 +99,18 @@ router.put('/:id',
       const db = getDB();
 
       // Check if review exists and belongs to user
-      const [reviews] = await db.execute(
+      const [reviews] = await db.execute<RowDataPacket[]>(
         'SELECT id FROM reviews WHERE id = ? AND reviewer_id = ?',
         [id, req.session.userId]
       );
 
-      if ((reviews as any[]).length === 0) {
+      if (reviews.length === 0) {
         return res.status(404).json({ error: 'Review not found or access denied' });
       }
 
       // Build dynamic update query
       const updates: string[] = [];
-      const values: any[] = [];
+      const values: unknown[] = [];
 
       if (rating !== undefined) {
         updates.push('rating = ?');
@@ -144,12 +145,12 @@ router.delete('/:id', requireStaff, async (req, res, next) => {
     const { id } = req.params;
     const db = getDB();
 
-    const [result] = await db.execute(
+    const [result] = await db.execute<ResultSetHeader>(
       'DELETE FROM reviews WHERE id = ? AND reviewer_id = ?',
       [id, req.session.userId]
     );
 
-    if ((result as any).affectedRows === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Review not found or access denied' });
     }
 

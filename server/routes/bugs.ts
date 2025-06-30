@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { getDB } from '../config/database.js';
 import { requireStaff, requireAdmin } from '../middleware/auth.js';
 
@@ -48,8 +49,8 @@ router.post('/',
       const { title, description, priority, build_id, tags } = req.body;
       const db = getDB();
 
-      const [result] = await db.execute(`
-        INSERT INTO bug_reports (title, description, priority, build_id, tags, reported_by) 
+      const [result] = await db.execute<ResultSetHeader>(`
+        INSERT INTO bug_reports (title, description, priority, build_id, tags, reported_by)
         VALUES (?, ?, ?, ?, ?, ?)
       `, [
         title,
@@ -62,7 +63,7 @@ router.post('/',
 
       res.status(201).json({
         message: 'Bug report created successfully',
-        bugId: (result as any).insertId
+        bugId: result.insertId
       });
     } catch (error) {
       next(error);
@@ -95,7 +96,7 @@ router.put('/:id',
 
       // Build dynamic update query
       const updates: string[] = [];
-      const values: any[] = [];
+      const values: unknown[] = [];
 
       if (title !== undefined) {
         updates.push('title = ?');
@@ -167,12 +168,12 @@ router.delete('/:id', requireAdmin, async (req, res, next) => {
     const { id } = req.params;
     const db = getDB();
 
-    const [result] = await db.execute(
+    const [result] = await db.execute<ResultSetHeader>(
       'DELETE FROM bug_reports WHERE id = ?',
       [id]
     );
 
-    if ((result as any).affectedRows === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Bug report not found' });
     }
 

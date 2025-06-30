@@ -254,7 +254,7 @@ const BugReports: React.FC = () => {
                   </label>
                   <select
                     value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as BugReport['priority'] })}
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                   >
                     <option value="low">Low</option>
@@ -271,7 +271,7 @@ const BugReports: React.FC = () => {
                     </label>
                     <select
                       value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as BugReport['status'] })}
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                     >
                       <option value="open">Open</option>

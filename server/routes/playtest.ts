@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { getDB } from '../config/database.js';
 import { requireStaff, requireAdmin } from '../middleware/auth.js';
 
@@ -53,15 +54,15 @@ router.post('/sessions',
       const { title, description, build_id, scheduled_date, duration_minutes, max_participants } = req.body;
       const db = getDB();
 
-      const [result] = await db.execute(`
-        INSERT INTO playtest_sessions 
+      const [result] = await db.execute<ResultSetHeader>(`
+        INSERT INTO playtest_sessions
         (title, description, build_id, scheduled_date, duration_minutes, max_participants, created_by)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `, [title, description, build_id, scheduled_date, duration_minutes, max_participants, req.session.userId]);
 
       res.status(201).json({
         message: 'Playtest session created successfully',
-        sessionId: (result as any).insertId
+        sessionId: result.insertId
       });
     } catch (error) {
       next(error);
@@ -106,12 +107,12 @@ router.get('/sessions/:id/rsvp', requireStaff, async (req, res, next) => {
     const { id } = req.params;
     const db = getDB();
 
-    const [rsvps] = await db.execute(`
-      SELECT * FROM playtest_rsvps 
+    const [rsvps] = await db.execute<RowDataPacket[]>(`
+      SELECT * FROM playtest_rsvps
       WHERE session_id = ? AND user_id = ?
     `, [id, req.session.userId]);
 
-    const rsvp = (rsvps as any[])[0];
+    const rsvp = rsvps[0] as RowDataPacket | undefined;
     res.json(rsvp || { status: null, notes: null });
   } catch (error) {
     next(error);

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { getDB } from '../config/database.js';
 
 const router = Router();
@@ -23,12 +24,12 @@ router.post('/register',
       const db = getDB();
 
       // Check if user exists
-      const [existingUsers] = await db.execute(
+      const [existingUsers] = await db.execute<RowDataPacket[]>(
         'SELECT id FROM users WHERE email = ? OR username = ?',
         [email, username]
       );
 
-      if ((existingUsers as any[]).length > 0) {
+      if (existingUsers.length > 0) {
         return res.status(409).json({ error: 'User already exists' });
       }
 
@@ -36,12 +37,12 @@ router.post('/register',
       const hashedPassword = await bcrypt.hash(password, 12);
 
       // Create user
-      const [result] = await db.execute(
+      const [result] = await db.execute<ResultSetHeader>(
         'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
         [username, email, hashedPassword, role]
       );
 
-      const userId = (result as any).insertId;
+      const userId = result.insertId;
 
       // Set session
       req.session.userId = userId;
@@ -75,12 +76,12 @@ router.post('/login',
       const db = getDB();
 
       // Find user
-      const [users] = await db.execute(
+      const [users] = await db.execute<RowDataPacket[]>(
         'SELECT * FROM users WHERE email = ?',
         [email]
       );
 
-      const user = (users as any[])[0];
+      const user = users[0] as RowDataPacket | undefined;
       if (!user) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
@@ -129,12 +130,12 @@ router.get('/me', async (req, res, next) => {
     }
 
     const db = getDB();
-    const [users] = await db.execute(
+    const [users] = await db.execute<RowDataPacket[]>(
       'SELECT id, username, email, role FROM users WHERE id = ?',
       [req.session.userId]
     );
 
-    const user = (users as any[])[0];
+    const user = users[0] as RowDataPacket | undefined;
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
