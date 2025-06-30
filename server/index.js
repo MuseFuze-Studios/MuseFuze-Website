@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import staffRoutes from './routes/staff.js';
 import adminRoutes from './routes/admin.js';
+import legalRoutes from './routes/legal.js';
 import { initDatabase } from './config/database.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -220,6 +221,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/legal', legalRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

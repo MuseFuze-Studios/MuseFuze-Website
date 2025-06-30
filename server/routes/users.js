@@ -23,6 +23,58 @@ router.get('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// Update user profile details
+router.put('/profile', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { firstName, lastName, email } = req.body;
+    const updates = [];
+    const values = [];
+
+    if (firstName !== undefined) {
+      updates.push('firstName = ?');
+      values.push(firstName);
+    }
+    if (lastName !== undefined) {
+      updates.push('lastName = ?');
+      values.push(lastName);
+    }
+    if (email !== undefined) {
+      updates.push('email = ?');
+      values.push(email);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(userId);
+    await pool.execute(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+    res.json({ message: 'Profile updated successfully' });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update cookie preferences
+router.put('/cookies', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { cookiesAccepted } = req.body;
+
+    if (typeof cookiesAccepted !== 'boolean') {
+      return res.status(400).json({ error: 'cookiesAccepted must be boolean' });
+    }
+
+    await pool.execute('UPDATE users SET cookiesAccepted = ? WHERE id = ?', [cookiesAccepted, userId]);
+    res.json({ message: 'Cookie preferences updated' });
+  } catch (error) {
+    console.error('Cookie preference update error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get user's stored data (for privacy compliance)
 router.get('/data', authenticateToken, async (req, res) => {
   try {
