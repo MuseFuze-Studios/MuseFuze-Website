@@ -146,6 +146,13 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  const formatRole = (role: string) => {
+    return role
+      .replace('_', ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+
   const simulateUploadProgress = (file: File): Promise<void> => {
     return new Promise((resolve, reject) => {
       setUploadState({
@@ -439,12 +446,12 @@ const DashboardPage: React.FC = () => {
                           {['dev_tester','developer','staff','admin','ceo'].includes(userData.role) ? (
                             <>
                               <Shield className="h-4 w-4 text-electric mr-2" />
-                              Staff Member
+                              {formatRole(userData.role)}
                             </>
                           ) : (
                             <>
                               <User className="h-4 w-4 text-gray-400 mr-2" />
-                              Regular User
+                              {formatRole(userData.role)}
                             </>
                           )}
                         </div>
