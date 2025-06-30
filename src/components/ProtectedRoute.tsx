@@ -6,9 +6,10 @@ import LoadingSpinner from './LoadingSpinner';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireStaff?: boolean;
+  requireAdmin?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireStaff = false }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireStaff = false, requireAdmin = false }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -19,6 +20,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireStaff 
   if (!user) {
     // Save the attempted location for redirect after login
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (requireAdmin && !['admin','ceo'].includes(user.role)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   if (requireStaff && !['dev_tester','developer','staff','admin','ceo'].includes(user.role)) {
