@@ -27,6 +27,7 @@ const Hero = () => {
           <h1 className="text-6xl md:text-8xl font-orbitron font-black mb-6 bg-gradient-to-r from-white via-electric to-neon bg-clip-text text-transparent">
             MuseFuze Studios
           </h1>
+
           <p className="text-2xl md:text-4xl font-rajdhani font-bold mb-8 text-gray-200">
             Small team. Big ideas. No shortcuts.
           </p>
@@ -35,12 +36,13 @@ const Hero = () => {
           </p>
 
           <button
-            onClick={() => scrollTo('join-us')}
-            className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-electric to-neon text-black font-rajdhani font-bold text-lg rounded-lg hover:shadow-xl hover:shadow-electric/25 transition-all duration-300 group"
-          >
-            Join Us
-            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-          </button>
+          onClick={() => scrollTo('join-us')}
+          className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-electric to-neon text-black font-rajdhani font-bold text-lg rounded-lg hover:shadow-xl hover:shadow-electric/25 transition-all duration-300 group"
+        >
+          Join Us
+          <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
+        </button>
+
         </div>
 
         {/* Projects */}
@@ -51,7 +53,7 @@ const Hero = () => {
               <Gamepad2 className="h-12 w-12 text-electric mb-4 group-hover:scale-110 transition-transform duration-200" />
               <h3 className="text-2xl font-orbitron font-bold mb-3 text-white">My Last Wish</h3>
               <p className="text-gray-300 font-rajdhani">
-                A story-driven action game exploring grief, guilt, and choice through stylized visuals and tight gameplay.
+                A cinematic action experience rooted in grief and revenge. Built for those who crave depth, emotion, and impact with every choice.
               </p>
             </div>
           </div>
@@ -62,7 +64,7 @@ const Hero = () => {
               <Crosshair className="h-12 w-12 text-neon mb-4 group-hover:scale-110 transition-transform duration-200" />
               <h3 className="text-2xl font-orbitron font-bold mb-3 text-white">FRONTLINE</h3>
               <p className="text-gray-300 font-rajdhani">
-                A tactical shooter built for strategic minds and close-quarters intensity. Balanced, responsive, and brutally fair.
+                More information coming soon!
               </p>
             </div>
           </div>
