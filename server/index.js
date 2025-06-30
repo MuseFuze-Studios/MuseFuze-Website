@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import staffRoutes from './routes/staff.js';
+import adminRoutes from './routes/admin.js';
 import { initDatabase } from './config/database.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -218,6 +219,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
