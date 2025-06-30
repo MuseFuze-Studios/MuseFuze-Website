@@ -9,7 +9,7 @@ export const errorHandler = (
   error: unknown,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   console.error('❌ Error:', error);
 

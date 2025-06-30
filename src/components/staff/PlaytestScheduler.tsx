@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, Users, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 interface PlaytestSession {
@@ -24,11 +24,7 @@ const PlaytestScheduler: React.FC = () => {
   const [rsvps, setRsvps] = useState<{ [key: number]: RSVP }>({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchSessions();
-  }, []);
-
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     try {
       const response = await fetch('http://localhost:5000/api/playtest/sessions', {
         credentials: 'include'
@@ -47,7 +43,11 @@ const PlaytestScheduler: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
 
   const fetchRSVP = async (sessionId: number) => {
     try {
@@ -92,14 +92,6 @@ const PlaytestScheduler: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string | null) => {
-    switch (status) {
-      case 'attending': return 'bg-green-600 hover:bg-green-700';
-      case 'maybe': return 'bg-yellow-600 hover:bg-yellow-700';
-      case 'not_attending': return 'bg-red-600 hover:bg-red-700';
-      default: return 'bg-gray-600 hover:bg-gray-700';
-    }
-  };
 
   if (loading) {
     return (

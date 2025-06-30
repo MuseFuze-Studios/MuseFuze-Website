@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { getDB } from '../config/database.js';
 import { requireAuth, requireStaff } from '../middleware/auth.js';
 
@@ -9,13 +10,13 @@ const router = Router();
 router.get('/profile', requireAuth, async (req, res, next) => {
   try {
     const db = getDB();
-    const [users] = await db.execute(`
-      SELECT id, username, email, role, created_at, 
+    const [users] = await db.execute<RowDataPacket[]>(`
+      SELECT id, username, email, role, created_at,
              data_processing_consent, marketing_consent, cookie_preferences
       FROM users WHERE id = ?
     `, [req.session.userId]);
 
-    const user = (users as any[])[0];
+    const user = users[0] as RowDataPacket | undefined;
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -44,7 +45,7 @@ router.put('/profile',
       const db = getDB();
 
       const updates: string[] = [];
-      const values: any[] = [];
+      const values: unknown[] = [];
 
       if (username !== undefined) {
         updates.push('username = ?');
@@ -110,8 +111,8 @@ router.put('/:id/role',
       }
 
       // Prevent staff from modifying admin/ceo accounts
-      const [targetUser] = await db.execute('SELECT role FROM users WHERE id = ?', [id]);
-      const targetUserRole = (targetUser as any[])[0]?.role;
+      const [targetUser] = await db.execute<RowDataPacket[]>('SELECT role FROM users WHERE id = ?', [id]);
+      const targetUserRole = targetUser[0]?.role as string | undefined;
       
       if (targetUserRole && roleHierarchy[targetUserRole] >= currentUserLevel && currentUserRole !== 'ceo') {
         return res.status(403).json({ 

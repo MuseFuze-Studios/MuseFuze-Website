@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { promises as fs } from 'fs';
 import { body, validationResult } from 'express-validator';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { getDB } from '../config/database.js';
 import { requireStaff, requireAdmin } from '../middleware/auth.js';
 
@@ -84,9 +85,9 @@ router.post('/upload',
       const { version, title, description, testInstructions, knownIssues } = req.body;
       const db = getDB();
 
-      const [result] = await db.execute(`
-        INSERT INTO game_builds 
-        (version, title, description, file_path, file_size, test_instructions, known_issues, uploaded_by) 
+      const [result] = await db.execute<ResultSetHeader>(`
+        INSERT INTO game_builds
+        (version, title, description, file_path, file_size, test_instructions, known_issues, uploaded_by)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         version,
@@ -101,7 +102,7 @@ router.post('/upload',
 
       res.status(201).json({
         message: 'Build uploaded successfully',
-        buildId: (result as any).insertId
+        buildId: result.insertId
       });
     } catch (error) {
       // Clean up uploaded file on error
@@ -119,12 +120,12 @@ router.get('/download/:id', requireStaff, async (req, res, next) => {
     const { id } = req.params;
     const db = getDB();
 
-    const [builds] = await db.execute(
+    const [builds] = await db.execute<RowDataPacket[]>(
       'SELECT * FROM game_builds WHERE id = ? AND is_active = true',
       [id]
     );
 
-    const build = (builds as any[])[0];
+    const build = builds[0] as RowDataPacket | undefined;
     if (!build) {
       return res.status(404).json({ error: 'Build not found' });
     }
@@ -182,12 +183,12 @@ router.delete('/:id', requireAdmin, async (req, res, next) => {
     const { id } = req.params;
     const db = getDB();
 
-    const [builds] = await db.execute(
+    const [builds] = await db.execute<RowDataPacket[]>(
       'SELECT file_path FROM game_builds WHERE id = ?',
       [id]
     );
 
-    const build = (builds as any[])[0];
+    const build = builds[0] as RowDataPacket | undefined;
     if (!build) {
       return res.status(404).json({ error: 'Build not found' });
     }
@@ -201,7 +202,7 @@ router.delete('/:id', requireAdmin, async (req, res, next) => {
     // Optionally delete file from filesystem
     try {
       await fs.unlink(build.file_path);
-    } catch (error) {
+    } catch (_error) {
       console.warn('Could not delete file:', build.file_path);
     }
 
