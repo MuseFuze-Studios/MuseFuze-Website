@@ -5,7 +5,8 @@ import BuildDownloads from '../components/staff/BuildDownloads';
 import TeamAnnouncements from '../components/staff/TeamAnnouncements';
 import PlaytestScheduler from '../components/staff/PlaytestScheduler';
 import DownloadHistory from '../components/staff/DownloadHistory';
-import { Bug, MessageSquare, Download, Megaphone, Calendar, History } from 'lucide-react';
+import MessageBoard from '../components/staff/MessageBoard';
+import { Bug, MessageSquare, Download, Megaphone, Calendar, History, MessageCircle } from 'lucide-react';
 
 const StaffDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('announcements');
@@ -14,6 +15,7 @@ const StaffDashboard: React.FC = () => {
     { id: 'announcements', label: 'Announcements', icon: Megaphone, component: TeamAnnouncements },
     { id: 'bugs', label: 'Bug Reports', icon: Bug, component: BugReports },
     { id: 'reviews', label: 'Reviews', icon: MessageSquare, component: Reviews },
+    { id: 'messages', label: 'Message Board', icon: MessageCircle, component: MessageBoard },
     { id: 'builds', label: 'Game Builds', icon: Download, component: BuildDownloads },
     { id: 'playtest', label: 'Playtest Sessions', icon: Calendar, component: PlaytestScheduler },
     { id: 'downloads', label: 'Download History', icon: History, component: DownloadHistory },
