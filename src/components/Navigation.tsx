@@ -7,6 +7,8 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { user, logout, loading } = useAuth();
+  const isStaffOrAbove =
+    user && ['dev_tester', 'developer', 'staff', 'admin', 'ceo'].includes(user.role);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -76,6 +78,15 @@ const Navigation = () => {
                     <User className="h-4 w-4" />
                     <span className="font-rajdhani">Dashboard</span>
                   </Link>
+                  {isStaffOrAbove && (
+                    <Link
+                      to="/staff"
+                      className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200"
+                    >
+                      <User className="h-4 w-4" />
+                      <span className="font-rajdhani">Staff</span>
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors duration-200"
@@ -137,6 +148,15 @@ const Navigation = () => {
                     <User className="h-4 w-4" />
                     <span>Dashboard</span>
                   </Link>
+                  {isStaffOrAbove && (
+                    <Link
+                      to="/staff"
+                      className="flex items-center space-x-2 py-2 font-rajdhani font-medium text-gray-300 hover:text-electric transition-colors duration-200"
+                    >
+                      <User className="h-4 w-4" />
+                      <span>Staff</span>
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="flex items-center space-x-2 py-2 font-rajdhani font-medium text-red-400 hover:text-red-300 transition-colors duration-200"
