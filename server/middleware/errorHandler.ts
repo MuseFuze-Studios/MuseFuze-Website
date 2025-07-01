@@ -9,6 +9,7 @@ export const errorHandler = (
   error: unknown,
   req: Request,
   res: Response,
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   _next: NextFunction
 ) => {
   console.error('❌ Error:', error);
