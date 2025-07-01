@@ -63,6 +63,61 @@ router.get('/builds', authenticateToken, requireStaff, async (req, res) => {
   }
 });
 
+// Download game build
+router.get('/builds/download/:id', authenticateToken, requireStaff, async (req, res) => {
+  try {
+    const buildId = req.params.id;
+
+    // Get build info
+    const [builds] = await pool.execute(
+      'SELECT * FROM game_builds WHERE id = ? AND isActive = TRUE',
+      [buildId]
+    );
+
+    if (builds.length === 0) {
+      return res.status(404).json({ error: 'Build not found' });
+    }
+
+    const build = builds[0];
+
+    // If it's an external URL, redirect
+    if (build.externalUrl) {
+      return res.redirect(build.externalUrl);
+    }
+
+    // If it's a file upload, serve the file
+    if (build.fileUrl) {
+      const filePath = path.join(__dirname, '..', build.fileUrl);
+      
+      // Check if file exists
+      const fs = await import('fs');
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found on server' });
+      }
+
+      // Set proper headers for download
+      const filename = `${build.name}-${build.version}${path.extname(filePath)}`;
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      
+      // Send the file
+      res.download(filePath, filename, (err) => {
+        if (err) {
+          console.error('Download error:', err);
+          if (!res.headersSent) {
+            res.status(500).json({ error: 'Download failed' });
+          }
+        }
+      });
+    } else {
+      res.status(404).json({ error: 'No file or URL available for this build' });
+    }
+  } catch (error) {
+    console.error('Build download error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Upload game build
 router.post('/builds', authenticateToken, requireStaff, upload.single('buildFile'), validateGameBuild, handleValidationErrors, async (req, res) => {
   try {

@@ -173,7 +173,6 @@ const DashboardPage: React.FC = () => {
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
-
   const simulateUploadProgress = (file: File): Promise<void> => {
     return new Promise((resolve, reject) => {
       setUploadState({
@@ -242,6 +241,32 @@ const DashboardPage: React.FC = () => {
       loadDashboardData();
     } catch (error) {
       console.error('Build upload failed:', error);
+    }
+  };
+
+  const handleBuildDownload = async (buildId: number, buildName: string) => {
+    try {
+      const response = await fetch(`/api/staff/builds/download/${buildId}`, {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${buildName}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData.error || 'Failed to download build');
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Download failed');
     }
   };
 
@@ -453,6 +478,16 @@ const DashboardPage: React.FC = () => {
                       <span>Staff Tools</span>
                     </button>
                   </>
+                )}
+
+                {user && ['staff','admin','ceo'].includes(user.role) && (
+                  <Link
+                    to="/staff"
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 font-rajdhani text-gray-300 hover:bg-white/10"
+                  >
+                    <Shield className="h-5 w-5" />
+                    <span>Staff Dashboard</span>
+                  </Link>
                 )}
 
                 {user && ['admin','ceo'].includes(user.role) && (
@@ -775,14 +810,13 @@ const DashboardPage: React.FC = () => {
                         </div>
                         <div className="flex space-x-2">
                           {build.fileUrl && (
-                            <a
-                              href={`http://localhost:5000${build.fileUrl}`}
-                              download
+                            <button
+                              onClick={() => handleBuildDownload(build.id, build.name)}
                               className="p-2 bg-electric/20 text-electric rounded-lg hover:bg-electric/30 transition-colors duration-200"
                               title="Download"
                             >
                               <Download className="h-4 w-4" />
-                            </a>
+                            </button>
                           )}
                           {build.externalUrl && (
                             <a
