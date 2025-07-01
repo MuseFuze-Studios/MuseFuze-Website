@@ -35,33 +35,36 @@ const StaffDashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="bg-gray-800/50 rounded-2xl p-2 mb-8 border border-gray-700">
-          <div className="flex flex-wrap gap-2">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
-                    activeTab === tab.id
-                      ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              );
-            })}
+        <div className="flex">
+          {/* Sidebar */}
+          <div className="w-64 bg-gray-800/50 rounded-2xl p-4 border border-gray-700">
+            <div className="flex flex-col gap-2">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
+                      activeTab === tab.id
+                        ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 ml-6 bg-gray-800/30 rounded-2xl border border-gray-700 min-h-[600px] p-4">
+            <ActiveComponent />
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="bg-gray-800/30 rounded-2xl border border-gray-700 min-h-[600px]">
-          <ActiveComponent />
-        </div>
       </div>
     </div>
   );
