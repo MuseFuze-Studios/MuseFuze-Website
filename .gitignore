@@ -26,6 +26,6 @@ dist-ssr
 .env.production
 dist-server
 deployment
-
+musefuze-deployment.zip
 
 server/uploads/
