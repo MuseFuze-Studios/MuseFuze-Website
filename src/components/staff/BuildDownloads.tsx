@@ -13,8 +13,6 @@ interface GameBuild {
   uploaded_by_name: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const BuildDownloads: React.FC = () => {
   const [builds, setBuilds] = useState<GameBuild[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,12 +24,12 @@ const BuildDownloads: React.FC = () => {
 
   const fetchBuilds = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/builds`, {
+      const response = await fetch('/api/staff/builds', {
         credentials: 'include'
       });
       if (response.ok) {
         const data = await response.json();
-        setBuilds(data);
+        setBuilds(data.builds || data);
       }
     } catch (error) {
       console.error('Failed to fetch builds:', error);
@@ -44,22 +42,34 @@ const BuildDownloads: React.FC = () => {
     setDownloading(buildId);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/builds/download/${buildId}`, {
+      const response = await fetch(`/api/staff/builds/download/${buildId}`, {
         credentials: 'include'
       });
 
       if (response.ok) {
+        // Get the filename from the Content-Disposition header if available
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `${version}.zip`;
+        
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+          if (filenameMatch) {
+            filename = filenameMatch[1];
+          }
+        }
+
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${version}.zip`;
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       } else {
-        alert('Failed to download build');
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData.error || 'Failed to download build');
       }
     } catch (error) {
       console.error('Download failed:', error);
@@ -154,7 +164,7 @@ const BuildDownloads: React.FC = () => {
                 <button
                   onClick={() => handleDownload(build.id, build.version)}
                   disabled={downloading === build.id}
-                  className="ml-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center space-x-2 font-medium"
+                  className="ml-6 flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
                 >
                   {downloading === build.id ? (
                     <>

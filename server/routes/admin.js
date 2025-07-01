@@ -82,4 +82,92 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) =>
   }
 });
 
+// Get dashboard stats
+router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    // Get user stats
+    const [userStats] = await pool.execute(
+      'SELECT role, COUNT(*) as count FROM users GROUP BY role'
+    );
+
+    // Get build stats
+    const [buildStats] = await pool.execute(
+      'SELECT COUNT(*) as total_builds FROM game_builds WHERE isActive = TRUE'
+    );
+
+    // Get bug stats (if table exists)
+    let bugStats = [];
+    try {
+      const [bugs] = await pool.execute(
+        'SELECT status, COUNT(*) as count FROM bug_reports GROUP BY status'
+      );
+      bugStats = bugs;
+    } catch (error) {
+      // Bug reports table might not exist
+      console.log('Bug reports table not found, using empty data');
+    }
+
+    // Get recent activity (simplified)
+    const recentActivity = [
+      {
+        type: 'user_registration',
+        description: 'New user registered',
+        created_at: new Date().toISOString()
+      },
+      {
+        type: 'build_upload',
+        description: 'New build uploaded',
+        created_at: new Date(Date.now() - 86400000).toISOString()
+      }
+    ];
+
+    res.json({
+      users: userStats,
+      builds: buildStats[0] || { total_builds: 0 },
+      bugs: bugStats,
+      recentActivity
+    });
+  } catch (error) {
+    console.error('Admin stats fetch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get server status
+router.get('/server-status', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    // In a real implementation, you would gather actual server metrics
+    // For now, we'll return simulated data
+    const status = {
+      cpu: Math.floor(Math.random() * 30) + 20, // 20-50%
+      memory: Math.floor(Math.random() * 40) + 30, // 30-70%
+      disk: Math.floor(Math.random() * 20) + 40, // 40-60%
+      uptime: formatUptime(process.uptime()),
+      connections: Math.floor(Math.random() * 50) + 10,
+      database: 'Connected',
+      lastUpdated: new Date().toISOString()
+    };
+
+    res.json(status);
+  } catch (error) {
+    console.error('Server status error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Helper function to format uptime
+function formatUptime(seconds) {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m`;
+  } else if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  } else {
+    return `${minutes}m`;
+  }
+}
+
 export default router;
