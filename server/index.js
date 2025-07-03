@@ -1,0 +1,317 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import staffRoutes from './routes/staff.js';
+import adminRoutes from './routes/admin.js';
+import legalRoutes from './routes/legal.js';
+import { initDatabase } from './config/database.js';
+import { errorHandler } from './middleware/errorHandler.js';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Initialize database
+await initDatabase();
+
+// Trust proxy for proper IP detection (important for production)
+app.set('trust proxy', 1);
+
+// Enhanced CORS configuration for both development and production
+const corsOptions = {
+  origin: function (origin, callback) {
+    // In production, we need to handle cases where origin might be undefined
+    // (like direct API calls, mobile apps, or same-origin requests)
+    if (!origin && NODE_ENV === 'production') {
+      // Allow same-origin requests in production
+      return callback(null, true);
+    }
+    
+    if (!origin && NODE_ENV === 'development') {
+      // Allow requests with no origin in development
+      return callback(null, true);
+    }
+    
+    const allowedOrigins = [
+      // Development origins
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:4173', // Vite preview
+      'http://127.0.0.1:4173',
+      
+      // Production origins - UPDATED for your domain
+      'https://musefuzestudios.com',
+      'https://www.musefuzestudios.com',
+      'https://musefuze.netlify.app',
+      'https://musefuze-studios.netlify.app',
+      
+      // Custom CLIENT_URL from environment
+      process.env.CLIENT_URL,
+      process.env.FRONTEND_URL,
+      process.env.CORS_ORIGIN,
+    ].filter(Boolean); // Remove undefined values
+    
+    // Log CORS attempts for debugging
+    console.log(`CORS check - Origin: ${origin}, Environment: ${NODE_ENV}`);
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log(`✅ CORS allowed for origin: ${origin}`);
+      callback(null, true);
+    } else {
+      console.log(`❌ CORS blocked origin: ${origin}`);
+      console.log(`Allowed origins:`, allowedOrigins);
+      
+      // In development, be more permissive
+      if (NODE_ENV === 'development') {
+        console.log(`🔧 Development mode: allowing origin anyway`);
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS policy violation: Origin ${origin} not allowed`));
+      }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'Pragma',
+    'X-CSRF-Token',
+    'X-Forwarded-For',
+    'X-Real-IP'
+  ],
+  exposedHeaders: ['Set-Cookie', 'X-Total-Count'],
+  maxAge: 86400, // 24 hours
+  optionsSuccessStatus: 200 // For legacy browser support
+};
+
+// Apply CORS before any other middleware
+app.use(cors(corsOptions));
+
+// Explicitly handle preflight requests
+app.options('*', (req, res) => {
+  console.log(`Preflight request from origin: ${req.get('Origin')}`);
+  res.header('Access-Control-Allow-Origin', req.get('Origin') || '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,Cache-Control,Pragma');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(200);
+});
+
+// Security middleware (configured for production)
+app.use(helmet({
+  contentSecurityPolicy: NODE_ENV === 'production' ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+      imgSrc: ["'self'", "data:", "https://images.pexels.com", "https://via.placeholder.com"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  } : false, // Disable CSP in development
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Rate limiting (more restrictive in production)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: NODE_ENV === 'production' ? 100 : 1000,
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: 15 * 60 // 15 minutes in seconds
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for health checks
+    return req.path === '/api/health';
+  }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: NODE_ENV === 'production' ? 50 : 500,
+  message: {
+    error: 'Too many authentication attempts, please try again later.',
+    retryAfter: 1 * 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// In production, serve the built frontend
+if (NODE_ENV === 'production') {
+  const publicPath = path.join(__dirname, '..', 'public');
+  app.use(express.static(publicPath));
+  
+  console.log(`📁 Serving static files from: ${publicPath}`);
+}
+
+// Request logging (more detailed in development)
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  const origin = req.get('Origin') || 'no-origin';
+  
+  if (NODE_ENV === 'development') {
+    console.log(`${timestamp} - ${req.method} ${req.path} - Origin: ${origin}`);
+  } else {
+    // Log only important requests in production
+    if (req.method !== 'GET' || req.path.startsWith('/api/')) {
+      console.log(`${timestamp} - ${req.method} ${req.path} - Origin: ${origin} - IP: ${req.ip}`);
+    }
+  }
+  
+  next();
+});
+
+// Add security headers for all responses
+app.use((req, res, next) => {
+  // Ensure CORS headers are set for all responses
+  const origin = req.get('Origin');
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  // Additional security headers
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('X-Frame-Options', 'DENY');
+  res.header('X-XSS-Protection', '1; mode=block');
+  
+  next();
+});
+
+// API Routes
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/staff', staffRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/legal', legalRoutes);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: NODE_ENV,
+    cors: 'enabled',
+    version: '1.0.0',
+    uptime: process.uptime(),
+    domain: req.get('Host'),
+    origin: req.get('Origin')
+  });
+});
+
+// CORS test endpoint
+app.get('/api/test-cors', (req, res) => {
+  res.json({ 
+    message: 'CORS test successful',
+    origin: req.get('Origin'),
+    host: req.get('Host'),
+    timestamp: new Date().toISOString(),
+    environment: NODE_ENV,
+    headers: {
+      'access-control-allow-origin': res.get('Access-Control-Allow-Origin'),
+      'access-control-allow-credentials': res.get('Access-Control-Allow-Credentials')
+    }
+  });
+});
+
+// In production, serve the React app for all non-API routes
+if (NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({
+        error: 'API route not found',
+        path: req.originalUrl,
+        method: req.method
+      });
+    }
+    
+    const indexPath = path.join(__dirname, '..', 'public', 'index.html');
+    res.sendFile(indexPath);
+  });
+} else {
+  // Catch-all for undefined routes in development
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      error: 'Route not found',
+      path: req.originalUrl,
+      method: req.method
+    });
+  });
+}
+
+// Error handling
+app.use(errorHandler);
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
+
+// Start server
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 MuseFuze Server running on port ${PORT}`);
+  console.log(`🔒 Environment: ${NODE_ENV}`);
+  console.log(`⚡ Rate limiting: ${NODE_ENV === 'production' ? 'STRICT' : 'RELAXED'}`);
+  console.log(`🌐 CORS enabled for ${NODE_ENV} environment`);
+  console.log(`📡 Server accessible at: http://localhost:${PORT}`);
+  console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+  
+  if (NODE_ENV === 'production') {
+    console.log(`🌍 Frontend served from: http://localhost:${PORT}`);
+    console.log(`🔗 API accessible at: http://localhost:${PORT}/api/`);
+  } else {
+    console.log(`🧪 CORS test: http://localhost:${PORT}/api/test-cors`);
+  }
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  console.error('Server error:', error);
+});
+
+export default app;
