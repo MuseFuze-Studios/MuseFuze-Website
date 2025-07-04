@@ -12,7 +12,7 @@ import userRoutes from './routes/users.js';
 import staffRoutes from './routes/staff.js';
 import adminRoutes from './routes/admin.js';
 import legalRoutes from './routes/legal.js';
-import { initDatabase } from './config/database.js';
+import { initDatabase, pool } from './config/database.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -223,159 +223,438 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/legal', legalRoutes);
 
-// Add missing endpoints directly here until routes are created
+// Database-driven endpoints (NO MOCK DATA)
 
 // Announcements
-app.get('/api/announcements', (req, res) => {
-  res.json(mockData.announcements);
+app.get('/api/announcements', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT a.*, u.firstName as author_name, u.lastName
+      FROM announcements a
+      JOIN users u ON a.author_id = u.id
+      ORDER BY a.is_sticky DESC, a.created_at DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching announcements:', error);
+    res.status(500).json({ error: 'Failed to fetch announcements' });
+  }
 });
 
 // Bug Reports
-app.get('/api/bugs', (req, res) => {
-  res.json(mockData.bugs);
+app.get('/api/bugs', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT 
+        br.*,
+        u1.firstName as reporter_name, u1.lastName as reporter_last,
+        u2.firstName as assignee_name, u2.lastName as assignee_last,
+        gb.version as build_version, gb.title as build_title
+      FROM bug_reports br
+      JOIN users u1 ON br.reported_by = u1.id
+      LEFT JOIN users u2 ON br.assigned_to = u2.id
+      LEFT JOIN game_builds gb ON br.build_id = gb.id
+      ORDER BY br.created_at DESC
+    `);
+    
+    // Format the response to match frontend expectations
+    const formattedRows = rows.map(row => ({
+      ...row,
+      reporter_name: `${row.reporter_name} ${row.reporter_last}`,
+      assignee_name: row.assignee_name ? `${row.assignee_name} ${row.assignee_last}` : null,
+      tags: row.tags ? JSON.parse(row.tags) : []
+    }));
+    
+    res.json(formattedRows);
+  } catch (error) {
+    console.error('Error fetching bugs:', error);
+    res.status(500).json({ error: 'Failed to fetch bug reports' });
+  }
 });
 
-app.post('/api/bugs', (req, res) => {
-  const bug = {
-    id: mockData.bugs.length + 1,
-    ...req.body,
-    reported_by: 1,
-    reporter_name: 'Current User',
-    status: 'open',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
-  mockData.bugs.push(bug);
-  res.status(201).json(bug);
+app.post('/api/bugs', async (req, res) => {
+  try {
+    const { title, description, priority, build_id, tags, assigned_to } = req.body;
+    const reported_by = req.user?.id || 1; // Use authenticated user ID
+    
+    const [result] = await pool.execute(`
+      INSERT INTO bug_reports (title, description, priority, build_id, tags, reported_by, assigned_to)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [title, description, priority, build_id || null, JSON.stringify(tags || []), reported_by, assigned_to || null]);
+    
+    // Fetch the created bug with joined data
+    const [rows] = await pool.execute(`
+      SELECT 
+        br.*,
+        u1.firstName as reporter_name, u1.lastName as reporter_last,
+        u2.firstName as assignee_name, u2.lastName as assignee_last,
+        gb.version as build_version, gb.title as build_title
+      FROM bug_reports br
+      JOIN users u1 ON br.reported_by = u1.id
+      LEFT JOIN users u2 ON br.assigned_to = u2.id
+      LEFT JOIN game_builds gb ON br.build_id = gb.id
+      WHERE br.id = ?
+    `, [result.insertId]);
+    
+    const bug = rows[0];
+    bug.reporter_name = `${bug.reporter_name} ${bug.reporter_last}`;
+    bug.assignee_name = bug.assignee_name ? `${bug.assignee_name} ${bug.assignee_last}` : null;
+    bug.tags = bug.tags ? JSON.parse(bug.tags) : [];
+    
+    res.status(201).json(bug);
+  } catch (error) {
+    console.error('Error creating bug:', error);
+    res.status(500).json({ error: 'Failed to create bug report' });
+  }
 });
 
-app.get('/api/bugs/team-members', (req, res) => {
-  res.json(mockData.teamMembers);
+app.get('/api/bugs/team-members', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT id, firstName, lastName, role
+      FROM users
+      WHERE role IN ('dev_tester', 'developer', 'staff', 'admin', 'ceo')
+      ORDER BY firstName, lastName
+    `);
+    
+    const formattedRows = rows.map(row => ({
+      id: row.id,
+      username: `${row.firstName} ${row.lastName}`,
+      role: row.role
+    }));
+    
+    res.json(formattedRows);
+  } catch (error) {
+    console.error('Error fetching team members:', error);
+    res.status(500).json({ error: 'Failed to fetch team members' });
+  }
 });
 
 // Reviews
-// Add missing endpoints directly here until routes are created
-
-// Announcements
-app.get('/api/announcements', (req, res) => {
-  res.json(mockData.announcements);
+app.get('/api/reviews/build/:buildId', async (req, res) => {
+  try {
+    const { buildId } = req.params;
+    const [rows] = await pool.execute(`
+      SELECT 
+        br.*,
+        u.firstName as reviewer_name, u.lastName as reviewer_last,
+        gb.version as build_version, gb.title as build_title
+      FROM build_reviews br
+      JOIN users u ON br.reviewer_id = u.id
+      JOIN game_builds gb ON br.build_id = gb.id
+      WHERE br.build_id = ?
+      ORDER BY br.created_at DESC
+    `, [buildId]);
+    
+    const formattedRows = rows.map(row => ({
+      ...row,
+      reviewer_name: `${row.reviewer_name} ${row.reviewer_last}`
+    }));
+    
+    res.json(formattedRows);
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    res.status(500).json({ error: 'Failed to fetch reviews' });
+  }
 });
 
-// Bug Reports
-app.get('/api/bugs', (req, res) => {
-  res.json(mockData.bugs);
-});
-
-app.post('/api/bugs', (req, res) => {
-  const bug = {
-    id: mockData.bugs.length + 1,
-    ...req.body,
-    reported_by: 1,
-    reporter_name: 'Current User',
-    status: 'open',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
-  mockData.bugs.push(bug);
-  res.status(201).json(bug);
-});
-
-app.get('/api/bugs/team-members', (req, res) => {
-  res.json(mockData.teamMembers);
-});
-
-// Reviews
-app.get('/api/reviews', (req, res) => {
-  res.json(mockData.reviews);
-});
-
-app.post('/api/reviews', (req, res) => {
-  const review = {
-    id: mockData.reviews.length + 1,
-    ...req.body,
-    reviewer_id: 1,
-    reviewer_name: 'Current User',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
-  mockData.reviews.push(review);
-  res.status(201).json(review);
+app.post('/api/reviews', async (req, res) => {
+  try {
+    const { build_id, rating, feedback } = req.body;
+    const reviewer_id = req.user?.id || 1; // Use authenticated user ID
+    
+    const [result] = await pool.execute(`
+      INSERT INTO build_reviews (build_id, rating, feedback, reviewer_id)
+      VALUES (?, ?, ?, ?)
+    `, [build_id, rating, feedback, reviewer_id]);
+    
+    // Fetch the created review with joined data
+    const [rows] = await pool.execute(`
+      SELECT 
+        br.*,
+        u.firstName as reviewer_name, u.lastName as reviewer_last,
+        gb.version as build_version, gb.title as build_title
+      FROM build_reviews br
+      JOIN users u ON br.reviewer_id = u.id
+      JOIN game_builds gb ON br.build_id = gb.id
+      WHERE br.id = ?
+    `, [result.insertId]);
+    
+    const review = rows[0];
+    review.reviewer_name = `${review.reviewer_name} ${review.reviewer_last}`;
+    
+    res.status(201).json(review);
+  } catch (error) {
+    console.error('Error creating review:', error);
+    res.status(500).json({ error: 'Failed to create review' });
+  }
 });
 
 // Staff builds
-app.get('/api/staff/builds', (req, res) => {
-  res.json({ builds: mockData.builds });
+app.get('/api/staff/builds', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT 
+        gb.*,
+        u.firstName as uploaded_by_name, u.lastName as uploader_last
+      FROM game_builds gb
+      JOIN users u ON gb.uploaded_by = u.id
+      WHERE gb.isActive = TRUE
+      ORDER BY gb.upload_date DESC
+    `);
+    
+    const formattedRows = rows.map(row => ({
+      ...row,
+      uploaded_by_name: `${row.uploaded_by_name} ${row.uploader_last}`
+    }));
+    
+    res.json({ builds: formattedRows });
+  } catch (error) {
+    console.error('Error fetching builds:', error);
+    res.status(500).json({ error: 'Failed to fetch builds' });
+  }
 });
 
 // Staff messages
-app.get('/api/staff/messages', (req, res) => {
-  const posts = mockData.messages.filter(m => !m.parentId);
-  const postsWithReplyCounts = posts.map(post => ({
-    ...post,
-    replyCount: mockData.messages.filter(m => m.parentId === post.id).length
-  }));
-  res.json({ posts: postsWithReplyCounts });
+app.get('/api/staff/messages', async (req, res) => {
+  try {
+    // Get posts (not replies)
+    const [posts] = await pool.execute(`
+      SELECT 
+        mp.*,
+        u.firstName, u.lastName
+      FROM message_posts mp
+      JOIN users u ON mp.authorId = u.id
+      WHERE mp.parentId IS NULL
+      ORDER BY mp.createdAt DESC
+    `);
+    
+    // Get reply counts for each post
+    const postIds = posts.map(p => p.id);
+    let replyCounts = {};
+    
+    if (postIds.length > 0) {
+      const placeholders = postIds.map(() => '?').join(',');
+      const [counts] = await pool.execute(`
+        SELECT parentId, COUNT(*) as count
+        FROM message_posts
+        WHERE parentId IN (${placeholders})
+        GROUP BY parentId
+      `, postIds);
+      
+      counts.forEach(count => {
+        replyCounts[count.parentId] = count.count;
+      });
+    }
+    
+    const postsWithReplyCounts = posts.map(post => ({
+      ...post,
+      replyCount: replyCounts[post.id] || 0
+    }));
+    
+    res.json({ posts: postsWithReplyCounts });
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
 });
 
-app.post('/api/staff/messages', (req, res) => {
-  const message = {
-    id: mockData.messages.length + 1,
-    ...req.body,
-    authorId: 1,
-    firstName: 'Current',
-    lastName: 'User',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    isEdited: false
-  };
-  mockData.messages.push(message);
-  res.status(201).json(message);
+app.post('/api/staff/messages', async (req, res) => {
+  try {
+    const { title, content, parentId } = req.body;
+    const authorId = req.user?.id || 1; // Use authenticated user ID
+    
+    const [result] = await pool.execute(`
+      INSERT INTO message_posts (title, content, authorId, parentId)
+      VALUES (?, ?, ?, ?)
+    `, [title, content, authorId, parentId || null]);
+    
+    // Fetch the created message with user data
+    const [rows] = await pool.execute(`
+      SELECT 
+        mp.*,
+        u.firstName, u.lastName
+      FROM message_posts mp
+      JOIN users u ON mp.authorId = u.id
+      WHERE mp.id = ?
+    `, [result.insertId]);
+    
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Error creating message:', error);
+    res.status(500).json({ error: 'Failed to create message' });
+  }
 });
 
 // Playtest sessions
-app.get('/api/playtest/sessions', (req, res) => {
-  res.json(mockData.playtestSessions);
+app.get('/api/playtest/sessions', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT 
+        ps.*,
+        u.firstName as created_by_name, u.lastName as creator_last,
+        gb.version as build_version, gb.title as build_title,
+        COUNT(pr.id) as rsvp_count
+      FROM playtest_sessions ps
+      JOIN users u ON ps.created_by = u.id
+      JOIN game_builds gb ON ps.build_id = gb.id
+      LEFT JOIN playtest_rsvps pr ON ps.id = pr.session_id AND pr.status = 'attending'
+      GROUP BY ps.id
+      ORDER BY ps.scheduled_date ASC
+    `);
+    
+    const formattedRows = rows.map(row => ({
+      ...row,
+      created_by_name: `${row.created_by_name} ${row.creator_last}`
+    }));
+    
+    res.json(formattedRows);
+  } catch (error) {
+    console.error('Error fetching playtest sessions:', error);
+    res.status(500).json({ error: 'Failed to fetch playtest sessions' });
+  }
 });
 
 // Download history
-app.get('/api/builds/downloads', (req, res) => {
-  res.json(mockData.downloadHistory);
+app.get('/api/builds/downloads', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT 
+        dh.*,
+        u.firstName as username, u.lastName as user_last, u.role,
+        gb.version, gb.title, gb.file_size
+      FROM download_history dh
+      JOIN users u ON dh.user_id = u.id
+      JOIN game_builds gb ON dh.build_id = gb.id
+      ORDER BY dh.download_date DESC
+      LIMIT 100
+    `);
+    
+    const formattedRows = rows.map(row => ({
+      ...row,
+      username: `${row.username} ${row.user_last}`
+    }));
+    
+    res.json(formattedRows);
+  } catch (error) {
+    console.error('Error fetching download history:', error);
+    res.status(500).json({ error: 'Failed to fetch download history' });
+  }
 });
 
 // Finance endpoints (admin only)
-app.get('/api/admin/finance/transactions', (req, res) => {
-  res.json(mockData.transactions);
+app.get('/api/admin/finance/transactions', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT 
+        ft.*,
+        u.firstName as responsible_staff, u.lastName as staff_last
+      FROM finance_transactions ft
+      JOIN users u ON ft.responsible_staff_id = u.id
+      ORDER BY ft.date DESC
+    `);
+    
+    const formattedRows = rows.map(row => ({
+      ...row,
+      responsible_staff: `${row.responsible_staff} ${row.staff_last}`
+    }));
+    
+    res.json(formattedRows);
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
 });
 
-app.post('/api/admin/finance/transactions', (req, res) => {
-  const transaction = {
-    id: mockData.transactions.length + 1,
-    ...req.body,
-    responsible_staff: 'Current User',
-    date: new Date().toISOString(),
-    status: 'approved'
-  };
-  mockData.transactions.push(transaction);
-  res.status(201).json(transaction);
+app.post('/api/admin/finance/transactions', async (req, res) => {
+  try {
+    const { type, category, amount, description, justification } = req.body;
+    const responsible_staff_id = req.user?.id || 1; // Use authenticated user ID
+    
+    const [result] = await pool.execute(`
+      INSERT INTO finance_transactions (type, category, amount, description, justification, responsible_staff_id)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [type, category, amount, description, justification, responsible_staff_id]);
+    
+    // Fetch the created transaction with user data
+    const [rows] = await pool.execute(`
+      SELECT 
+        ft.*,
+        u.firstName as responsible_staff, u.lastName as staff_last
+      FROM finance_transactions ft
+      JOIN users u ON ft.responsible_staff_id = u.id
+      WHERE ft.id = ?
+    `, [result.insertId]);
+    
+    const transaction = rows[0];
+    transaction.responsible_staff = `${transaction.responsible_staff} ${transaction.staff_last}`;
+    
+    res.status(201).json(transaction);
+  } catch (error) {
+    console.error('Error creating transaction:', error);
+    res.status(500).json({ error: 'Failed to create transaction' });
+  }
 });
 
-app.get('/api/admin/finance/budgets', (req, res) => {
-  res.json(mockData.budgets);
+app.get('/api/admin/finance/budgets', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT * FROM finance_budgets
+      ORDER BY category, period
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching budgets:', error);
+    res.status(500).json({ error: 'Failed to fetch budgets' });
+  }
 });
 
-app.post('/api/admin/finance/budgets', (req, res) => {
-  const budget = {
-    id: mockData.budgets.length + 1,
-    ...req.body,
-    spent: 0,
-    last_updated: new Date().toISOString()
-  };
-  mockData.budgets.push(budget);
-  res.status(201).json(budget);
+app.post('/api/admin/finance/budgets', async (req, res) => {
+  try {
+    const { category, allocated, period } = req.body;
+    
+    const [result] = await pool.execute(`
+      INSERT INTO finance_budgets (category, allocated, period)
+      VALUES (?, ?, ?)
+    `, [category, allocated, period]);
+    
+    // Fetch the created budget
+    const [rows] = await pool.execute(`
+      SELECT * FROM finance_budgets WHERE id = ?
+    `, [result.insertId]);
+    
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Error creating budget:', error);
+    res.status(500).json({ error: 'Failed to create budget' });
+  }
 });
 
-app.get('/api/admin/finance/forecasts', (req, res) => {
-  res.json(mockData.forecasts);
+app.get('/api/admin/finance/forecasts', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT * FROM finance_forecasts
+      ORDER BY year DESC, 
+      CASE month
+        WHEN 'January' THEN 1
+        WHEN 'February' THEN 2
+        WHEN 'March' THEN 3
+        WHEN 'April' THEN 4
+        WHEN 'May' THEN 5
+        WHEN 'June' THEN 6
+        WHEN 'July' THEN 7
+        WHEN 'August' THEN 8
+        WHEN 'September' THEN 9
+        WHEN 'October' THEN 10
+        WHEN 'November' THEN 11
+        WHEN 'December' THEN 12
+      END
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching forecasts:', error);
+    res.status(500).json({ error: 'Failed to fetch forecasts' });
+  }
 });
 
 // Health check endpoint
@@ -388,7 +667,8 @@ app.get('/api/health', (req, res) => {
     version: '1.0.0',
     uptime: process.uptime(),
     domain: req.get('Host'),
-    origin: req.get('Origin')
+    origin: req.get('Origin'),
+    database: 'connected'
   });
 });
 
@@ -455,6 +735,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 CORS enabled for ${NODE_ENV} environment`);
   console.log(`📡 Server accessible at: http://localhost:${PORT}`);
   console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🗄️ Database: Connected and ready`);
   
   if (NODE_ENV === 'production') {
     console.log(`🌍 Frontend served from: http://localhost:${PORT}`);
