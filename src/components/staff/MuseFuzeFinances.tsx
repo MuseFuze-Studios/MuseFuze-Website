@@ -66,7 +66,7 @@ const MuseFuzeFinances: React.FC = () => {
   const [transactionForm, setTransactionForm] = useState({
     type: 'expense' as 'income' | 'expense',
     category: '',
-    amount: 0,
+    amount: '',
     vat_rate: 20.00,
     description: '',
     justification: '',
@@ -75,12 +75,12 @@ const MuseFuzeFinances: React.FC = () => {
   
   const [budgetForm, setBudgetForm] = useState({
     category: '',
-    allocated: 0,
+    allocated: '',
     period: 'monthly' as 'monthly' | 'quarterly' | 'yearly'
   });
 
   const [fundsForm, setFundsForm] = useState({
-    amount: 0,
+    amount: '',
     source: '',
     description: '',
     investor_name: ''
@@ -169,6 +169,7 @@ const MuseFuzeFinances: React.FC = () => {
     try {
       await staffAPI.createTransaction({
         ...transactionForm,
+        amount: parseFloat(transactionForm.amount) || 0,
         date: new Date().toISOString().split('T')[0]
       });
       fetchFinancialData();
@@ -176,7 +177,7 @@ const MuseFuzeFinances: React.FC = () => {
       setTransactionForm({
         type: 'expense' as 'income' | 'expense',
         category: '',
-        amount: 0,
+        amount: '',
         vat_rate: 20.00,
         description: '',
         justification: '',
@@ -192,12 +193,15 @@ const MuseFuzeFinances: React.FC = () => {
     e.preventDefault();
     
     try {
-      await staffAPI.createBudget(budgetForm);
+      await staffAPI.createBudget({
+        ...budgetForm,
+        allocated: parseFloat(budgetForm.allocated) || 0
+      });
       fetchFinancialData();
       setShowBudgetForm(false);
       setBudgetForm({
         category: '',
-        allocated: 0,
+        allocated: '',
         period: 'monthly' as 'monthly' | 'quarterly' | 'yearly'
       });
     } catch (error) {
@@ -213,7 +217,7 @@ const MuseFuzeFinances: React.FC = () => {
       const transactionData = {
         type: 'income',
         category: 'Investment Funding',
-        amount: fundsForm.amount,
+        amount: parseFloat(fundsForm.amount) || 0,
         vat_rate: 0,
         description: `${fundsForm.source}: ${fundsForm.description}`,
         justification: `Investment funding from ${fundsForm.investor_name || 'investor'}`,
@@ -226,7 +230,7 @@ const MuseFuzeFinances: React.FC = () => {
       fetchFinancialData();
       setShowAddFundsForm(false);
       setFundsForm({
-        amount: 0,
+        amount: '',
         source: '',
         description: '',
         investor_name: ''
@@ -616,12 +620,12 @@ const MuseFuzeFinances: React.FC = () => {
                 <input
                   type="number"
                   step="0.01"
-                  min="0"
+                  min="0.01"
                   value={fundsForm.amount}
-                  onChange={(e) => setFundsForm({ ...fundsForm, amount: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => setFundsForm({ ...fundsForm, amount: e.target.value })}
                   required
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="0.00"
+                  placeholder="Enter amount"
                 />
               </div>
 
@@ -741,12 +745,12 @@ const MuseFuzeFinances: React.FC = () => {
                   <input
                     type="number"
                     step="0.01"
-                    min="0"
+                    min="0.01"
                     value={transactionForm.amount}
-                    onChange={(e) => setTransactionForm({ ...transactionForm, amount: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
                     required
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="0.00"
+                    placeholder="Enter amount"
                   />
                 </div>
 
@@ -811,16 +815,16 @@ const MuseFuzeFinances: React.FC = () => {
                 />
               </div>
 
-              {transactionForm.amount > 0 && transactionForm.vat_rate > 0 && (
+              {parseFloat(transactionForm.amount) > 0 && transactionForm.vat_rate > 0 && (
                 <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
                   <div className="flex items-center mb-2">
                     <Calculator className="h-4 w-4 text-yellow-400 mr-2" />
                     <span className="text-yellow-300 font-medium">VAT Calculation</span>
                   </div>
                   <div className="text-sm text-gray-300">
-                    <div>Net Amount: £{(Number(transactionForm.amount) || 0).toFixed(2)}</div>
-                    <div>VAT ({(Number(transactionForm.vat_rate) || 0)}%): £{((Number(transactionForm.amount) || 0) * (Number(transactionForm.vat_rate) || 0) / 100).toFixed(2)}</div>
-                    <div className="font-medium">Total: £{((Number(transactionForm.amount) || 0) + ((Number(transactionForm.amount) || 0) * (Number(transactionForm.vat_rate) || 0) / 100)).toFixed(2)}</div>
+                    <div>Net Amount: £{(parseFloat(transactionForm.amount) || 0).toFixed(2)}</div>
+                    <div>VAT ({transactionForm.vat_rate}%): £{((parseFloat(transactionForm.amount) || 0) * transactionForm.vat_rate / 100).toFixed(2)}</div>
+                    <div className="font-medium">Total: £{((parseFloat(transactionForm.amount) || 0) + ((parseFloat(transactionForm.amount) || 0) * transactionForm.vat_rate / 100)).toFixed(2)}</div>
                   </div>
                 </div>
               )}
@@ -876,12 +880,12 @@ const MuseFuzeFinances: React.FC = () => {
                 <input
                   type="number"
                   step="0.01"
-                  min="0"
+                  min="0.01"
                   value={budgetForm.allocated}
-                  onChange={(e) => setBudgetForm({ ...budgetForm, allocated: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => setBudgetForm({ ...budgetForm, allocated: e.target.value })}
                   required
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  placeholder="0.00"
+                  placeholder="Enter budget amount"
                 />
               </div>
 

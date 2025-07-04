@@ -25,10 +25,16 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
+    console.log(`API Response: ${response.status} ${response.config.url}`);
     return response;
   },
   (error) => {
-    console.error('API Response Error:', error.response?.data || error.message);
+    console.error('API Response Error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+      url: error.config?.url
+    });
     
     // Handle specific error cases
     if (error.response?.status === 401) {
@@ -112,11 +118,20 @@ export const staffAPI = {
   
   // Finance (Admin only)
   getTransactions: () => api.get('/staff/finance/transactions'),
-  createTransaction: (data: any) => api.post('/staff/finance/transactions', data),
+  createTransaction: (data: any) => {
+    console.log('Sending transaction data:', data);
+    return api.post('/staff/finance/transactions', data);
+  },
   getBudgets: () => api.get('/staff/finance/budgets'),
-  createBudget: (data: any) => api.post('/staff/finance/budgets', data),
+  createBudget: (data: any) => {
+    console.log('Sending budget data:', data);
+    return api.post('/staff/finance/budgets', data);
+  },
   getForecasts: () => api.get('/staff/finance/forecasts'),
-  generateTaxReport: (data: any) => api.post('/staff/finance/tax-report', data),
+  generateTaxReport: (data: any) => {
+    console.log('Sending tax report data:', data);
+    return api.post('/staff/finance/tax-report', data);
+  },
 };
 
 // Admin API

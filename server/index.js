@@ -257,46 +257,119 @@ app.get('/api/bugs', (req, res) => {
 
 // Finance endpoints
 app.get('/api/staff/finance/transactions', (req, res) => {
-  res.json([]);
+  // Return mock transactions with proper structure
+  const mockTransactions = [
+    {
+      id: 1,
+      type: 'income',
+      category: 'Investment Funding',
+      amount: 10000,
+      currency: 'GBP',
+      vat_rate: 0,
+      vat_amount: 0,
+      description: 'Initial seed funding',
+      justification: 'Startup capital for development',
+      responsible_staff: 'Admin User',
+      date: new Date().toISOString().split('T')[0],
+      status: 'approved',
+      hmrc_category: 'Investment Income'
+    },
+    {
+      id: 2,
+      type: 'expense',
+      category: 'Software Licenses',
+      amount: 500,
+      currency: 'GBP',
+      vat_rate: 20,
+      vat_amount: 100,
+      description: 'Unity Pro licenses',
+      justification: 'Required for game development',
+      responsible_staff: 'Admin User',
+      date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+      status: 'approved',
+      hmrc_category: 'Software and subscriptions'
+    }
+  ];
+  res.json(mockTransactions);
 });
 
 app.post('/api/staff/finance/transactions', (req, res) => {
+  console.log('Creating transaction:', req.body);
+  
   const transaction = {
     id: Date.now(),
     ...req.body,
-    vat_amount: (parseFloat(req.body.amount || 0) * parseFloat(req.body.vat_rate || 0)) / 100,
+    amount: parseFloat(req.body.amount) || 0,
+    vat_rate: parseFloat(req.body.vat_rate) || 0,
+    vat_amount: ((parseFloat(req.body.amount) || 0) * (parseFloat(req.body.vat_rate) || 0)) / 100,
+    currency: 'GBP',
     responsible_staff: 'Current User',
     date: new Date().toISOString(),
     status: 'approved'
   };
+  
+  console.log('Created transaction:', transaction);
   res.status(201).json(transaction);
 });
 
 app.get('/api/staff/finance/budgets', (req, res) => {
-  res.json([]);
+  // Return mock budgets
+  const mockBudgets = [
+    {
+      id: 1,
+      category: 'Software Licenses',
+      allocated: 2000,
+      spent: 500,
+      currency: 'GBP',
+      period: 'monthly',
+      fiscal_year: new Date().getFullYear(),
+      last_updated: new Date().toISOString()
+    },
+    {
+      id: 2,
+      category: 'Marketing & Advertising',
+      allocated: 1500,
+      spent: 0,
+      currency: 'GBP',
+      period: 'monthly',
+      fiscal_year: new Date().getFullYear(),
+      last_updated: new Date().toISOString()
+    }
+  ];
+  res.json(mockBudgets);
 });
 
 app.post('/api/staff/finance/budgets', (req, res) => {
+  console.log('Creating budget:', req.body);
+  
   const budget = {
     id: Date.now(),
     ...req.body,
+    allocated: parseFloat(req.body.allocated) || 0,
+    spent: 0,
+    currency: 'GBP',
+    fiscal_year: new Date().getFullYear(),
     created_at: new Date().toISOString(),
-    status: 'active'
+    last_updated: new Date().toISOString()
   };
+  
+  console.log('Created budget:', budget);
   res.status(201).json(budget);
 });
 
 app.get('/api/staff/finance/forecasts', (req, res) => {
   res.json([
-    { month: 'January', estimated: 5000, actual: 4800 },
-    { month: 'February', estimated: 5500, actual: 5200 },
-    { month: 'March', estimated: 6000, actual: null },
-    { month: 'April', estimated: 6200, actual: null }
+    { month: 'January', estimated: 5000, actual: 4800, currency: 'GBP', fiscal_year: new Date().getFullYear() },
+    { month: 'February', estimated: 5500, actual: 5200, currency: 'GBP', fiscal_year: new Date().getFullYear() },
+    { month: 'March', estimated: 6000, actual: 0, currency: 'GBP', fiscal_year: new Date().getFullYear() },
+    { month: 'April', estimated: 6200, actual: 0, currency: 'GBP', fiscal_year: new Date().getFullYear() }
   ]);
 });
 
 // Tax report generation endpoint
 app.post('/api/staff/finance/tax-report', (req, res) => {
+  console.log('Generating tax report:', req.body);
+  
   const { report_type, period_start, period_end } = req.body;
   
   const mockReport = {
@@ -312,6 +385,7 @@ app.post('/api/staff/finance/tax-report', (req, res) => {
     generated_at: new Date().toISOString()
   };
   
+  console.log('Generated tax report:', mockReport);
   res.json(mockReport);
 });
 
