@@ -296,12 +296,16 @@ app.get('/api/staff/finance/transactions', (req, res) => {
 app.post('/api/staff/finance/transactions', (req, res) => {
   console.log('Creating transaction:', req.body);
   
+  const amount = parseFloat(req.body.amount) || 0;
+  const vatRate = parseFloat(req.body.vat_rate) || 0;
+  const vatAmount = (amount * vatRate) / 100;
+  
   const transaction = {
     id: Date.now(),
     ...req.body,
-    amount: parseFloat(req.body.amount) || 0,
-    vat_rate: parseFloat(req.body.vat_rate) || 0,
-    vat_amount: ((parseFloat(req.body.amount) || 0) * (parseFloat(req.body.vat_rate) || 0)) / 100,
+    amount: amount,
+    vat_rate: vatRate,
+    vat_amount: vatAmount,
     currency: 'GBP',
     responsible_staff: 'Current User',
     date: new Date().toISOString(),

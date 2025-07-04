@@ -166,12 +166,26 @@ const MuseFuzeFinances: React.FC = () => {
   const handleTransactionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!transactionForm.amount || parseFloat(transactionForm.amount) <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+    
+    if (!transactionForm.category || !transactionForm.description || !transactionForm.justification) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
     try {
-      await staffAPI.createTransaction({
+      const transactionData = {
         ...transactionForm,
         amount: parseFloat(transactionForm.amount) || 0,
         date: new Date().toISOString().split('T')[0]
-      });
+      };
+      
+      console.log('Submitting transaction:', transactionData);
+      await staffAPI.createTransaction(transactionData);
+      
       fetchFinancialData();
       setShowTransactionForm(false);
       setTransactionForm({
@@ -183,6 +197,8 @@ const MuseFuzeFinances: React.FC = () => {
         justification: '',
         hmrc_category: ''
       });
+      
+      alert('Transaction created successfully!');
     } catch (error) {
       console.error('Failed to create transaction:', error);
       alert('Failed to create transaction. Please try again.');
@@ -213,6 +229,11 @@ const MuseFuzeFinances: React.FC = () => {
   const handleAddFunds = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!fundsForm.amount || parseFloat(fundsForm.amount) <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+    
     try {
       const transactionData = {
         type: 'income',
@@ -225,6 +246,7 @@ const MuseFuzeFinances: React.FC = () => {
         date: new Date().toISOString().split('T')[0]
       };
       
+      console.log('Submitting funds transaction:', transactionData);
       await staffAPI.createTransaction(transactionData);
       
       fetchFinancialData();
@@ -235,6 +257,8 @@ const MuseFuzeFinances: React.FC = () => {
         description: '',
         investor_name: ''
       });
+      
+      alert('Funds added successfully!');
     } catch (error) {
       console.error('Failed to add funds:', error);
       alert('Failed to add funds. Please try again.');

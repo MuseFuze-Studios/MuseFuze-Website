@@ -531,15 +531,27 @@ router.post('/finance/transactions', validateFinanceTransaction, handleValidatio
 
     const { type, category, amount, vat_rate, description, justification, hmrc_category, date } = req.body;
     
+    console.log('Creating transaction with data:', { type, category, amount, vat_rate, description, justification, hmrc_category, date });
+    
     // Calculate VAT amount
-    const vatAmount = (Number(amount || 0) * Number(vat_rate || 0)) / 100;
+    const numAmount = Number(amount || 0);
+    const numVatRate = Number(vat_rate || 0);
+    const vatAmount = (numAmount * numVatRate) / 100;
+    
+    console.log('Calculated values:', { numAmount, numVatRate, vatAmount });
     
     const [result] = await pool.execute(`
       INSERT INTO finance_transactions (type, category, amount, currency, vat_rate, vat_amount, description, justification, hmrc_category, responsible_staff_id, date)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [type, category, Number(amount || 0), 'GBP', Number(vat_rate || 20.00), Number(vatAmount), description, justification, hmrc_category, req.user.id, date]);
+    `, [type, category, numAmount, 'GBP', numVatRate, vatAmount, description, justification, hmrc_category, req.user.id, date]);
 
-    res.status(201).json({ message: 'Transaction created successfully' });
+    console.log('Transaction created successfully with ID:', result.insertId);
+    
+    res.status(201).json({ 
+      message: 'Transaction created successfully',
+      id: result.insertId,
+      vat_amount: vatAmount
+    });
   } catch (error) {
     console.error('Failed to create transaction:', error);
     res.status(500).json({ error: 'Internal server error' });

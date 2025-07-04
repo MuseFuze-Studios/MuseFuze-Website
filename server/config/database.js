@@ -232,7 +232,7 @@ async function createTables() {
         amount DECIMAL(10, 2) NOT NULL,
         currency VARCHAR(3) DEFAULT 'GBP',
         vat_rate DECIMAL(5, 2) DEFAULT 20.00,
-        vat_amount DECIMAL(10, 2) DEFAULT 0.00,
+        vat_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
         description VARCHAR(200) NOT NULL,
         justification TEXT NOT NULL,
         receipt_path VARCHAR(500),
