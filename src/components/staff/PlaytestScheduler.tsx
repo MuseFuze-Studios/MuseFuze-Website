@@ -60,11 +60,11 @@ const PlaytestScheduler: React.FC = () => {
     try {
       const [sessionsRes, buildsRes] = await Promise.all([
         staffAPI.getPlaytestSessions(),
-        staffAPI.getBuilds()
+        fetch('/api/staff/builds', { credentials: 'include' }).then(res => res.json())
       ]);
       
       setSessions(sessionsRes.data);
-      setBuilds(buildsRes.data.builds || buildsRes.data);
+      setBuilds(buildsRes.builds || buildsRes);
 
       // Fetch RSVPs for each session
       const rsvpPromises = sessionsRes.data.map((session: PlaytestSession) =>

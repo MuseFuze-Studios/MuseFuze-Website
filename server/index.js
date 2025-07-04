@@ -229,6 +229,32 @@ app.get('/api/test-cors', (req, res) => {
   });
 });
 
+// Add missing endpoints directly here until routes are created
+
+// Announcements
+app.get('/api/announcements', (req, res) => {
+  res.json(mockData.announcements);
+});
+
+// Redirect old build upload endpoint to new staff endpoint
+app.post('/api/builds/upload', (req, res) => {
+  res.status(301).json({ 
+    error: 'Endpoint moved', 
+    message: 'Please use /api/staff/builds/upload instead',
+    redirect: '/api/staff/builds/upload'
+  });
+});
+
+// Game builds endpoint
+app.get('/api/builds', (req, res) => {
+  res.json(mockData.builds);
+});
+
+// Bug Reports
+app.get('/api/bugs', (req, res) => {
+  res.json(mockData.bugs);
+});
+
 // In production, serve the React app for all non-API routes
 if (NODE_ENV === 'production') {
   app.get('*', (req, res) => {

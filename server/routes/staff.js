@@ -177,6 +177,12 @@ router.get('/builds', async (req, res) => {
 // Build upload endpoint
 router.post('/builds/upload', upload.single('buildFile'), async (req, res) => {
   try {
+    console.log('Build upload request received:', {
+      file: req.file ? req.file.originalname : 'No file',
+      body: req.body,
+      user: req.user.email
+    });
+
     if (!['developer', 'staff', 'admin', 'ceo'].includes(req.user.role)) {
       return res.status(403).json({ error: 'Insufficient permissions to upload builds' });
     }

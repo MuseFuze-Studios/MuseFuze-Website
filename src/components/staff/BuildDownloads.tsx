@@ -25,9 +25,18 @@ const BuildDownloads: React.FC = () => {
 
   const fetchBuilds = async () => {
     try {
-      const response = await staffAPI.getBuilds();
-      const buildsData = response.data.builds || response.data;
-      setBuilds(buildsData);
+      const response = await fetch('/api/staff/builds', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const buildsData = data.builds || data;
+        setBuilds(buildsData);
+      }
+    } catch (error) {
+      console.error('Failed to fetch builds:', error);
+    } finally {
+      setLoading(false);
     }
   };
 

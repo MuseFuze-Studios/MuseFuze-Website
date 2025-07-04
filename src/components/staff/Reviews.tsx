@@ -48,11 +48,16 @@ const Reviews: React.FC = () => {
 
   const fetchBuilds = async () => {
     try {
-      const response = await staffAPI.getBuilds();
-      const buildsData = response.data.builds || response.data;
+      const response = await fetch('/api/staff/builds', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const buildsData = data.builds || data;
       setBuilds(buildsData);
       if (buildsData.length > 0) {
         setSelectedBuild(buildsData[0].id);
+      }
       }
     } catch (error) {
       console.error('Failed to fetch builds:', error);

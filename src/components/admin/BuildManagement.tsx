@@ -33,12 +33,12 @@ const BuildManagement: React.FC = () => {
 
   const fetchBuilds = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/builds', {
+      const response = await fetch('/api/staff/builds', {
         credentials: 'include'
       });
       if (response.ok) {
         const data = await response.json();
-        setBuilds(data);
+        setBuilds(data.builds || data);
       }
     } catch (error) {
       console.error('Failed to fetch builds:', error);
