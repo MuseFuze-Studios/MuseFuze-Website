@@ -300,7 +300,8 @@ app.get('/api/bugs/team-members', (req, res) => {
 });
 
 // Reviews
-  res.json(buildReviews);
+app.get('/api/reviews', (req, res) => {
+  res.json(mockData.reviews);
 });
 
 app.post('/api/reviews', (req, res) => {
