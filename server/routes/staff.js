@@ -1,780 +1,471 @@
 import express from 'express';
-import multer from 'multer';
+import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
+import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { pool } from '../config/database.js';
-import { authenticateToken, requireStaff, requireAdmin } from '../middleware/auth.js';
-import { 
-  validateGameBuild, 
-  validateMessagePost, 
-  validateBugReport, 
-  validateReview, 
-  validatePlaytestSession,
-  validateFinanceTransaction,
-  validateBudget,
-  handleValidationErrors 
-} from '../middleware/validation.js';
+
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import staffRoutes from './routes/staff.js';
+import adminRoutes from './routes/admin.js';
+import legalRoutes from './routes/legal.js';
+import { initDatabase } from './config/database.js';
+import { errorHandler } from './middleware/errorHandler.js';
+
+// Mock data storage (since we don't have database yet)
+let mockData = {
+  announcements: [
+    {
+      id: 1,
+      title: 'Welcome to the Staff Dashboard',
+      content: 'This is your central hub for development collaboration. Use the various tools to report bugs, submit reviews, and coordinate testing sessions.',
+      author_name: 'Admin User',
+      is_sticky: true,
+      target_roles: ['all'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ],
+  bugs: [],
+  builds: [
+    {
+      id: 1,
+      version: '0.1.0',
+      title: 'Alpha Build - Initial Release',
+      description: 'First playable build with basic mechanics',
+      file_size: 1024 * 1024 * 50, // 50MB
+      upload_date: new Date().toISOString(),
+      test_instructions: 'Test basic movement and interaction systems',
+      known_issues: 'Some UI elements may not scale properly on different resolutions',
+      uploaded_by_name: 'Admin User'
+    }
+  ],
+  reviews: [],
+  messages: [],
+  playtestSessions: [],
+  downloadHistory: [],
+  transactions: [],
+  budgets: [],
+  forecasts: [
+    { month: 'January', estimated: 5000, actual: 4800 },
+    { month: 'February', estimated: 5500, actual: 5200 },
+    { month: 'March', estimated: 6000, actual: 0 }
+  ],
+  teamMembers: [
+    { id: 1, username: 'Admin User', role: 'admin' },
+    { id: 2, username: 'Staff Member', role: 'staff' },
+    { id: 3, username: 'Developer', role: 'developer' }
+  ]
+};
+
+// Mock data storage (since we don't have database yet)
+let mockData = {
+  announcements: [
+    {
+      id: 1,
+      title: 'Welcome to the Staff Dashboard',
+      content: 'This is your central hub for development collaboration. Use the various tools to report bugs, submit reviews, and coordinate testing sessions.',
+      author_name: 'Admin User',
+      is_sticky: true,
+      target_roles: ['all'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ],
+  bugs: [],
+  builds: [
+    {
+      id: 1,
+      version: '0.1.0',
+      title: 'Alpha Build - Initial Release',
+      description: 'First playable build with basic mechanics',
+      file_size: 1024 * 1024 * 50, // 50MB
+      upload_date: new Date().toISOString(),
+      test_instructions: 'Test basic movement and interaction systems',
+      known_issues: 'Some UI elements may not scale properly on different resolutions',
+      uploaded_by_name: 'Admin User'
+    }
+  ],
+  reviews: [],
+  messages: [],
+  playtestSessions: [],
+  downloadHistory: [],
+  transactions: [],
+  budgets: [],
+  forecasts: [
+    { month: 'January', estimated: 5000, actual: 4800 },
+    { month: 'February', estimated: 5500, actual: 5200 },
+    { month: 'March', estimated: 6000, actual: 0 }
+  ],
+  teamMembers: [
+    { id: 1, username: 'Admin User', role: 'admin' },
+    { id: 2, username: 'Staff Member', role: 'staff' },
+    { id: 3, username: 'Developer', role: 'developer' }
+  ]
+};
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const router = express.Router();
+const app = express();
+const PORT = process.env.PORT || 5000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Initialize database
+await initDatabase();
 
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 500 * 1024 * 1024, // 500MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      '.zip', '.rar', '.7z', '.tar', '.gz',
-      '.exe', '.msi', '.dmg', '.pkg', '.deb', '.rpm',
-      '.apk', '.ipa'
-    ];
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedTypes.includes(ext)) {
-      cb(null, true);
+// Trust proxy for proper IP detection (important for production)
+app.set('trust proxy', 1);
+
+// Enhanced CORS configuration for both development and production
+const corsOptions = {
+  origin: function (origin, callback) {
+    // In production, we need to handle cases where origin might be undefined
+    // (like direct API calls, mobile apps, or same-origin requests)
+    if (!origin && NODE_ENV === 'production') {
+      // Allow same-origin requests in production
+      return callback(null, true);
+    }
+    
+    if (!origin && NODE_ENV === 'development') {
+      // Allow requests with no origin in development
+      return callback(null, true);
+    }
+    
+    const allowedOrigins = [
+      // Development origins
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:4173', // Vite preview
+      'http://127.0.0.1:4173',
+      
+      // Production origins - UPDATED for your domain
+      'https://musefuzestudios.com',
+      'https://www.musefuzestudios.com',
+      'https://musefuze.netlify.app',
+      'https://musefuze-studios.netlify.app',
+      
+      // Custom CLIENT_URL from environment
+      process.env.CLIENT_URL,
+      process.env.FRONTEND_URL,
+      process.env.CORS_ORIGIN,
+    ].filter(Boolean); // Remove undefined values
+    
+    // Log CORS attempts for debugging
+    console.log(`CORS check - Origin: ${origin}, Environment: ${NODE_ENV}`);
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log(`✅ CORS allowed for origin: ${origin}`);
+      callback(null, true);
     } else {
-      cb(new Error('Invalid file type. Only game build files are allowed.'));
-    }
-  }
-});
-
-// ==================== GAME BUILDS ====================
-
-// Get all game builds
-router.get('/builds', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [builds] = await pool.execute(`
-      SELECT gb.*, u.firstName, u.lastName 
-      FROM game_builds gb 
-      JOIN users u ON gb.uploaded_by = u.id
-      WHERE gb.isActive = TRUE 
-      ORDER BY gb.upload_date DESC
-    `);
-
-    res.json({ builds });
-  } catch (error) {
-    console.error('Builds fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Upload game build
-router.post('/builds', authenticateToken, requireStaff, upload.single('buildFile'), validateGameBuild, handleValidationErrors, async (req, res) => {
-  try {
-    const { name, version, description, testInstructions, knownIssues } = req.body;
-    const externalUrl = req.body.externalUrl ?? null;
-    const fileUrl = req.file ? `/uploads/${req.file.filename}` : null;
-    const fileSize = req.file ? req.file.size : 0;
-
-    if (!fileUrl && !externalUrl) {
-      return res.status(400).json({ error: 'Either a file upload or external URL is required' });
-    }
-
-    const [result] = await pool.execute(
-      'INSERT INTO game_builds (name, version, description, fileUrl, externalUrl, file_size, test_instructions, known_issues, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, version, description, fileUrl, externalUrl, fileSize, testInstructions, knownIssues, req.user.id]
-    );
-
-    res.status(201).json({
-      message: 'Game build uploaded successfully',
-      build: {
-        id: result.insertId,
-        name,
-        version,
-        description,
-        fileUrl,
-        externalUrl
-      }
-    });
-  } catch (error) {
-    console.error('Build upload error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Download game build
-router.get('/builds/download/:id', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const buildId = req.params.id;
-
-    const [builds] = await pool.execute(
-      'SELECT * FROM game_builds WHERE id = ? AND isActive = TRUE',
-      [buildId]
-    );
-
-    if (builds.length === 0) {
-      return res.status(404).json({ error: 'Build not found' });
-    }
-
-    const build = builds[0];
-
-    // Log download
-    await pool.execute(
-      'INSERT INTO download_history (build_id, user_id, ip_address, user_agent, file_size) VALUES (?, ?, ?, ?, ?)',
-      [buildId, req.user.id, req.ip, req.get('User-Agent'), build.file_size]
-    );
-
-    if (build.externalUrl) {
-      return res.redirect(build.externalUrl);
-    }
-
-    if (build.fileUrl) {
-      const filePath = path.join(__dirname, '..', build.fileUrl);
+      console.log(`❌ CORS blocked origin: ${origin}`);
+      console.log(`Allowed origins:`, allowedOrigins);
       
-      const fs = await import('fs');
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'File not found on server' });
+      // In development, be more permissive
+      if (NODE_ENV === 'development') {
+        console.log(`🔧 Development mode: allowing origin anyway`);
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS policy violation: Origin ${origin} not allowed`));
       }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'Pragma',
+    'X-CSRF-Token',
+    'X-Forwarded-For',
+    'X-Real-IP'
+  ],
+  exposedHeaders: ['Set-Cookie', 'X-Total-Count'],
+  maxAge: 86400, // 24 hours
+  optionsSuccessStatus: 200 // For legacy browser support
+};
 
-      const filename = `${build.name}-${build.version}${path.extname(filePath)}`;
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Type', 'application/octet-stream');
-      
-      res.download(filePath, filename, (err) => {
-        if (err) {
-          console.error('Download error:', err);
-          if (!res.headersSent) {
-            res.status(500).json({ error: 'Download failed' });
-          }
-        }
+// Apply CORS before any other middleware
+app.use(cors(corsOptions));
+
+// Explicitly handle preflight requests
+app.options('*', (req, res) => {
+  console.log(`Preflight request from origin: ${req.get('Origin')}`);
+  res.header('Access-Control-Allow-Origin', req.get('Origin') || '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,Cache-Control,Pragma');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(200);
+});
+
+// Security middleware (configured for production)
+app.use(helmet({
+  contentSecurityPolicy: NODE_ENV === 'production' ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+      imgSrc: ["'self'", "data:", "https://images.pexels.com", "https://via.placeholder.com"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  } : false, // Disable CSP in development
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Rate limiting (more restrictive in production)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: NODE_ENV === 'production' ? 100 : 1000,
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: 15 * 60 // 15 minutes in seconds
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for health checks
+    return req.path === '/api/health';
+  }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: NODE_ENV === 'production' ? 50 : 500,
+  message: {
+    error: 'Too many authentication attempts, please try again later.',
+    retryAfter: 1 * 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// In production, serve the built frontend
+if (NODE_ENV === 'production') {
+  const publicPath = path.join(__dirname, '..', 'public');
+  app.use(express.static(publicPath));
+  
+  console.log(`📁 Serving static files from: ${publicPath}`);
+}
+
+// Request logging (more detailed in development)
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  const origin = req.get('Origin') || 'no-origin';
+  
+  if (NODE_ENV === 'development') {
+    console.log(`${timestamp} - ${req.method} ${req.path} - Origin: ${origin}`);
+  } else {
+    // Log only important requests in production
+    if (req.method !== 'GET' || req.path.startsWith('/api/')) {
+      console.log(`${timestamp} - ${req.method} ${req.path} - Origin: ${origin} - IP: ${req.ip}`);
+    }
+  }
+  
+  next();
+});
+
+// Add security headers for all responses
+app.use((req, res, next) => {
+  // Ensure CORS headers are set for all responses
+  const origin = req.get('Origin');
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  // Additional security headers
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('X-Frame-Options', 'DENY');
+  res.header('X-XSS-Protection', '1; mode=block');
+  
+  next();
+});
+
+// API Routes
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/staff', staffRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/legal', legalRoutes);
+
+// Add missing endpoints directly here until routes are created
+
+// Announcements
+app.get('/api/announcements', (req, res) => {
+  res.json(mockData.announcements);
+});
+
+// Bug Reports
+app.get('/api/bugs', (req, res) => {
+  res.json(mockData.bugs);
+});
+
+app.post('/api/bugs', (req, res) => {
+  const bug = {
+    id: mockData.bugs.length + 1,
+    ...req.body,
+    reported_by: 1,
+    reporter_name: 'Current User',
+    status: 'open',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  mockData.bugs.push(bug);
+  res.status(201).json(bug);
+});
+
+app.get('/api/bugs/team-members', (req, res) => {
+  res.json(mockData.teamMembers);
+});
+
+// Reviews
+// Add missing endpoints directly here until routes are created
+
+// Announcements
+app.get('/api/announcements', (req, res) => {
+  res.json(mockData.announcements);
+});
+
+// Bug Reports
+app.get('/api/bugs', (req, res) => {
+  res.json(mockData.bugs);
+});
+
+app.post('/api/bugs', (req, res) => {
+  const bug = {
+    id: mockData.bugs.length + 1,
+    ...req.body,
+    reported_by: 1,
+    reporter_name: 'Current User',
+    status: 'open',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  mockData.bugs.push(bug);
+  res.status(201).json(bug);
+});
+
+app.get('/api/bugs/team-members', (req, res) => {
+  res.json(mockData.teamMembers);
+});
+
+// Reviews
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: NODE_ENV,
+    cors: 'enabled',
+    version: '1.0.0',
+    uptime: process.uptime(),
+    domain: req.get('Host'),
+    origin: req.get('Origin')
+  });
+});
+
+// CORS test endpoint
+app.get('/api/test-cors', (req, res) => {
+  res.json({ 
+    message: 'CORS test successful',
+    origin: req.get('Origin'),
+    host: req.get('Host'),
+    timestamp: new Date().toISOString(),
+    environment: NODE_ENV,
+    headers: {
+      'access-control-allow-origin': res.get('Access-Control-Allow-Origin'),
+      'access-control-allow-credentials': res.get('Access-Control-Allow-Credentials')
+    }
+  });
+});
+
+// In production, serve the React app for all non-API routes
+if (NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({
+        error: 'API route not found',
+        path: req.originalUrl,
+        method: req.method
       });
-    } else {
-      res.status(404).json({ error: 'No file or URL available for this build' });
     }
-  } catch (error) {
-    console.error('Build download error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Delete game build
-router.delete('/builds/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const buildId = req.params.id;
-
-    await pool.execute(
-      'UPDATE game_builds SET isActive = FALSE WHERE id = ?',
-      [buildId]
-    );
-
-    res.json({ message: 'Build deleted successfully' });
-  } catch (error) {
-    console.error('Build delete error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// ==================== MESSAGE BOARD ====================
-
-// Get all message posts
-router.get('/messages', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [posts] = await pool.execute(`
-      SELECT mp.*, u.firstName, u.lastName,
-             (SELECT COUNT(*) FROM message_posts WHERE parentId = mp.id) as replyCount
-      FROM message_posts mp 
-      JOIN users u ON mp.authorId = u.id 
-      WHERE mp.parentId IS NULL
-      ORDER BY mp.createdAt DESC
-    `);
-
-    res.json({ posts });
-  } catch (error) {
-    console.error('Messages fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get replies for a post
-router.get('/messages/:id/replies', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [replies] = await pool.execute(`
-      SELECT mp.*, u.firstName, u.lastName
-      FROM message_posts mp 
-      JOIN users u ON mp.authorId = u.id 
-      WHERE mp.parentId = ?
-      ORDER BY mp.createdAt ASC
-    `, [req.params.id]);
-
-    res.json({ replies });
-  } catch (error) {
-    console.error('Replies fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Create message post
-router.post('/messages', authenticateToken, requireStaff, validateMessagePost, handleValidationErrors, async (req, res) => {
-  try {
-    const { title, content, parentId } = req.body;
-
-    if (parentId) {
-      const [parentPosts] = await pool.execute(
-        'SELECT id FROM message_posts WHERE id = ?',
-        [parentId]
-      );
-
-      if (parentPosts.length === 0) {
-        return res.status(404).json({ error: 'Parent post not found' });
-      }
-    }
-
-    const [result] = await pool.execute(
-      'INSERT INTO message_posts (title, content, authorId, parentId) VALUES (?, ?, ?, ?)',
-      [title, content, req.user.id, parentId || null]
-    );
-
-    res.status(201).json({
-      message: 'Post created successfully',
-      post: {
-        id: result.insertId,
-        title,
-        content,
-        parentId
-      }
+    
+    const indexPath = path.join(__dirname, '..', 'public', 'index.html');
+    res.sendFile(indexPath);
+  });
+} else {
+  // Catch-all for undefined routes in development
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      error: 'Route not found',
+      path: req.originalUrl,
+      method: req.method
     });
-  } catch (error) {
-    console.error('Message post error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  });
+}
+
+// Error handling
+app.use(errorHandler);
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
+
+// Start server
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 MuseFuze Server running on port ${PORT}`);
+  console.log(`🔒 Environment: ${NODE_ENV}`);
+  console.log(`⚡ Rate limiting: ${NODE_ENV === 'production' ? 'STRICT' : 'RELAXED'}`);
+  console.log(`🌐 CORS enabled for ${NODE_ENV} environment`);
+  console.log(`📡 Server accessible at: http://localhost:${PORT}`);
+  console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+  
+  if (NODE_ENV === 'production') {
+    console.log(`🌍 Frontend served from: http://localhost:${PORT}`);
+    console.log(`🔗 API accessible at: http://localhost:${PORT}/api/`);
+  } else {
+    console.log(`🧪 CORS test: http://localhost:${PORT}/api/test-cors`);
   }
 });
 
-// Delete message post
-router.delete('/messages/:id', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const postId = req.params.id;
-
-    const [posts] = await pool.execute(
-      'SELECT authorId FROM message_posts WHERE id = ?',
-      [postId]
-    );
-
-    if (posts.length === 0) {
-      return res.status(404).json({ error: 'Post not found' });
-    }
-
-    if (posts[0].authorId !== req.user.id && !['admin', 'ceo'].includes(req.user.role)) {
-      return res.status(403).json({ error: 'You can only delete your own posts' });
-    }
-
-    await pool.execute('DELETE FROM message_posts WHERE id = ?', [postId]);
-
-    res.json({ message: 'Post deleted successfully' });
-  } catch (error) {
-    console.error('Message delete error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+// Handle server errors
+server.on('error', (error) => {
+  console.error('Server error:', error);
 });
 
-// ==================== BUG REPORTS ====================
-
-// Get all bug reports
-router.get('/bugs', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [bugs] = await pool.execute(`
-      SELECT b.*, 
-             reporter.firstName as reporter_firstName, reporter.lastName as reporter_lastName,
-             assignee.firstName as assignee_firstName, assignee.lastName as assignee_lastName,
-             gb.version as build_version, gb.name as build_title
-      FROM bug_reports b
-      LEFT JOIN users reporter ON b.reported_by = reporter.id
-      LEFT JOIN users assignee ON b.assigned_to = assignee.id
-      LEFT JOIN game_builds gb ON b.build_id = gb.id
-      ORDER BY b.created_at DESC
-    `);
-
-    // Format the response to match frontend expectations
-    const formattedBugs = bugs.map(bug => ({
-      ...bug,
-      reporter_name: bug.reporter_firstName && bug.reporter_lastName 
-        ? `${bug.reporter_firstName} ${bug.reporter_lastName}` 
-        : 'Unknown',
-      assignee_name: bug.assignee_firstName && bug.assignee_lastName 
-        ? `${bug.assignee_firstName} ${bug.assignee_lastName}` 
-        : null,
-      tags: bug.tags ? JSON.parse(bug.tags) : []
-    }));
-
-    res.json(formattedBugs);
-  } catch (error) {
-    console.error('Bugs fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Create bug report
-router.post('/bugs', authenticateToken, requireStaff, validateBugReport, handleValidationErrors, async (req, res) => {
-  try {
-    const { title, description, priority, build_id, tags, assigned_to } = req.body;
-
-    const [result] = await pool.execute(`
-      INSERT INTO bug_reports (title, description, priority, build_id, tags, reported_by, assigned_to)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [
-      title,
-      description,
-      priority,
-      build_id || null,
-      tags ? JSON.stringify(tags) : null,
-      req.user.id,
-      assigned_to || null
-    ]);
-
-    res.status(201).json({
-      message: 'Bug report created successfully',
-      bugId: result.insertId
-    });
-  } catch (error) {
-    console.error('Bug creation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Update bug report
-router.put('/bugs/:id', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const bugId = req.params.id;
-    const { title, description, priority, status, tags, assigned_to, build_id } = req.body;
-
-    const updates = [];
-    const values = [];
-
-    if (title !== undefined) {
-      updates.push('title = ?');
-      values.push(title);
-    }
-    if (description !== undefined) {
-      updates.push('description = ?');
-      values.push(description);
-    }
-    if (priority !== undefined) {
-      updates.push('priority = ?');
-      values.push(priority);
-    }
-    if (status !== undefined) {
-      updates.push('status = ?');
-      values.push(status);
-    }
-    if (tags !== undefined) {
-      updates.push('tags = ?');
-      values.push(JSON.stringify(tags));
-    }
-    if (assigned_to !== undefined) {
-      updates.push('assigned_to = ?');
-      values.push(assigned_to);
-    }
-    if (build_id !== undefined) {
-      updates.push('build_id = ?');
-      values.push(build_id);
-    }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    values.push(bugId);
-
-    await pool.execute(
-      `UPDATE bug_reports SET ${updates.join(', ')} WHERE id = ?`,
-      values
-    );
-
-    res.json({ message: 'Bug report updated successfully' });
-  } catch (error) {
-    console.error('Bug update error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Delete bug report
-router.delete('/bugs/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const bugId = req.params.id;
-
-    await pool.execute('DELETE FROM bug_reports WHERE id = ?', [bugId]);
-
-    res.json({ message: 'Bug report deleted successfully' });
-  } catch (error) {
-    console.error('Bug delete error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get team members for bug assignment
-router.get('/bugs/team-members', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [members] = await pool.execute(`
-      SELECT id, CONCAT(firstName, ' ', lastName) as username, role 
-      FROM users 
-      WHERE role IN ('dev_tester', 'developer', 'staff', 'admin', 'ceo')
-      ORDER BY role, firstName
-    `);
-
-    res.json(members);
-  } catch (error) {
-    console.error('Team members fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// ==================== REVIEWS ====================
-
-// Get reviews for a build
-router.get('/reviews/build/:buildId', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const { buildId } = req.params;
-    const [reviews] = await pool.execute(`
-      SELECT r.*, 
-             CONCAT(u.firstName, ' ', u.lastName) as reviewer_name,
-             gb.version as build_version
-      FROM reviews r
-      JOIN users u ON r.reviewer_id = u.id
-      JOIN game_builds gb ON r.build_id = gb.id
-      WHERE r.build_id = ?
-      ORDER BY r.created_at DESC
-    `, [buildId]);
-
-    res.json(reviews);
-  } catch (error) {
-    console.error('Reviews fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Create review
-router.post('/reviews', authenticateToken, requireStaff, validateReview, handleValidationErrors, async (req, res) => {
-  try {
-    const { build_id, rating, feedback } = req.body;
-
-    // Check if build exists
-    const [builds] = await pool.execute(
-      'SELECT id FROM game_builds WHERE id = ? AND isActive = TRUE',
-      [build_id]
-    );
-
-    if (builds.length === 0) {
-      return res.status(404).json({ error: 'Build not found' });
-    }
-
-    const [result] = await pool.execute(`
-      INSERT INTO reviews (build_id, reviewer_id, rating, feedback)
-      VALUES (?, ?, ?, ?)
-    `, [build_id, req.user.id, rating, feedback]);
-
-    res.status(201).json({
-      message: 'Review created successfully',
-      reviewId: result.insertId
-    });
-  } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ error: 'You have already reviewed this build' });
-    }
-    console.error('Review creation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Update review
-router.put('/reviews/:id', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const reviewId = req.params.id;
-    const { rating, feedback } = req.body;
-
-    // Check if review exists and belongs to user
-    const [reviews] = await pool.execute(
-      'SELECT id FROM reviews WHERE id = ? AND reviewer_id = ?',
-      [reviewId, req.user.id]
-    );
-
-    if (reviews.length === 0) {
-      return res.status(404).json({ error: 'Review not found or access denied' });
-    }
-
-    const updates = [];
-    const values = [];
-
-    if (rating !== undefined) {
-      updates.push('rating = ?');
-      values.push(rating);
-    }
-    if (feedback !== undefined) {
-      updates.push('feedback = ?');
-      values.push(feedback);
-    }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    values.push(reviewId);
-
-    await pool.execute(
-      `UPDATE reviews SET ${updates.join(', ')} WHERE id = ?`,
-      values
-    );
-
-    res.json({ message: 'Review updated successfully' });
-  } catch (error) {
-    console.error('Review update error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Delete review
-router.delete('/reviews/:id', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const reviewId = req.params.id;
-
-    const [result] = await pool.execute(
-      'DELETE FROM reviews WHERE id = ? AND reviewer_id = ?',
-      [reviewId, req.user.id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Review not found or access denied' });
-    }
-
-    res.json({ message: 'Review deleted successfully' });
-  } catch (error) {
-    console.error('Review delete error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// ==================== ANNOUNCEMENTS ====================
-
-// Get announcements
-router.get('/announcements', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [announcements] = await pool.execute(`
-      SELECT a.*, CONCAT(u.firstName, ' ', u.lastName) as author_name
-      FROM team_announcements a
-      LEFT JOIN users u ON a.author_id = u.id
-      WHERE JSON_CONTAINS(a.target_roles, ?) OR JSON_CONTAINS(a.target_roles, '"all"')
-      ORDER BY a.is_sticky DESC, a.created_at DESC
-    `, [JSON.stringify(req.user.role)]);
-
-    // Parse target_roles JSON
-    const formattedAnnouncements = announcements.map(announcement => ({
-      ...announcement,
-      target_roles: announcement.target_roles ? JSON.parse(announcement.target_roles) : []
-    }));
-
-    res.json(formattedAnnouncements);
-  } catch (error) {
-    console.error('Announcements fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// ==================== PLAYTEST SESSIONS ====================
-
-// Get playtest sessions
-router.get('/playtest/sessions', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [sessions] = await pool.execute(`
-      SELECT 
-        ps.*,
-        gb.version as build_version,
-        gb.name as build_title,
-        CONCAT(u.firstName, ' ', u.lastName) as created_by_name,
-        COUNT(pr.id) as rsvp_count
-      FROM playtest_sessions ps
-      LEFT JOIN game_builds gb ON ps.build_id = gb.id
-      LEFT JOIN users u ON ps.created_by = u.id
-      LEFT JOIN playtest_rsvps pr ON ps.id = pr.session_id AND pr.status = 'attending'
-      WHERE ps.scheduled_date >= NOW()
-      GROUP BY ps.id
-      ORDER BY ps.scheduled_date ASC
-    `);
-
-    res.json(sessions);
-  } catch (error) {
-    console.error('Playtest sessions fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Create playtest session
-router.post('/playtest/sessions', authenticateToken, requireAdmin, validatePlaytestSession, handleValidationErrors, async (req, res) => {
-  try {
-    const { title, description, build_id, scheduled_date, duration_minutes, max_participants } = req.body;
-
-    const [result] = await pool.execute(`
-      INSERT INTO playtest_sessions
-      (title, description, build_id, scheduled_date, duration_minutes, max_participants, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [title, description, build_id, scheduled_date, duration_minutes, max_participants, req.user.id]);
-
-    res.status(201).json({
-      message: 'Playtest session created successfully',
-      sessionId: result.insertId
-    });
-  } catch (error) {
-    console.error('Playtest session creation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// RSVP to playtest session
-router.post('/playtest/sessions/:id/rsvp', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const sessionId = req.params.id;
-    const { status, notes } = req.body;
-
-    if (!['attending', 'maybe', 'not_attending'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid RSVP status' });
-    }
-
-    await pool.execute(`
-      INSERT INTO playtest_rsvps (session_id, user_id, status, notes)
-      VALUES (?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE status = VALUES(status), notes = VALUES(notes)
-    `, [sessionId, req.user.id, status, notes]);
-
-    res.json({ message: 'RSVP updated successfully' });
-  } catch (error) {
-    console.error('RSVP error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get user's RSVP status
-router.get('/playtest/sessions/:id/rsvp', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const sessionId = req.params.id;
-    const [rsvps] = await pool.execute(`
-      SELECT * FROM playtest_rsvps
-      WHERE session_id = ? AND user_id = ?
-    `, [sessionId, req.user.id]);
-
-    const rsvp = rsvps[0] || { status: null, notes: null };
-    res.json(rsvp);
-  } catch (error) {
-    console.error('RSVP fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// ==================== DOWNLOAD HISTORY ====================
-
-// Get download history
-router.get('/builds/downloads', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const [downloads] = await pool.execute(`
-      SELECT 
-        dh.*,
-        CONCAT(u.firstName, ' ', u.lastName) as username,
-        u.role,
-        gb.version,
-        gb.name as title
-      FROM download_history dh
-      JOIN users u ON dh.user_id = u.id
-      JOIN game_builds gb ON dh.build_id = gb.id
-      ORDER BY dh.download_date DESC
-      LIMIT 100
-    `);
-
-    res.json(downloads);
-  } catch (error) {
-    console.error('Download history fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// ==================== FINANCE (ADMIN ONLY) ====================
-
-// Get finance transactions
-router.get('/admin/finance/transactions', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const [transactions] = await pool.execute(
-      'SELECT * FROM finance_transactions ORDER BY date DESC LIMIT 100'
-    );
-    res.json(transactions);
-  } catch (error) {
-    console.error('Finance transactions fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Create finance transaction
-router.post('/admin/finance/transactions', authenticateToken, requireAdmin, validateFinanceTransaction, handleValidationErrors, async (req, res) => {
-  try {
-    const { type, category, amount, description, justification } = req.body;
-    const responsibleStaff = `${req.user.firstName} ${req.user.lastName}`;
-
-    const [result] = await pool.execute(
-      'INSERT INTO finance_transactions (type, category, amount, description, justification, responsible_staff) VALUES (?, ?, ?, ?, ?, ?)',
-      [type, category, amount, description, justification, responsibleStaff]
-    );
-
-    res.status(201).json({
-      message: 'Transaction created successfully',
-      transactionId: result.insertId
-    });
-  } catch (error) {
-    console.error('Finance transaction creation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get finance budgets
-router.get('/admin/finance/budgets', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const [budgets] = await pool.execute(
-      'SELECT * FROM finance_budgets ORDER BY category, period'
-    );
-    res.json(budgets);
-  } catch (error) {
-    console.error('Finance budgets fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Create finance budget
-router.post('/admin/finance/budgets', authenticateToken, requireAdmin, validateBudget, handleValidationErrors, async (req, res) => {
-  try {
-    const { category, allocated, period } = req.body;
-
-    const [result] = await pool.execute(
-      'INSERT INTO finance_budgets (category, allocated, period) VALUES (?, ?, ?)',
-      [category, allocated, period]
-    );
-
-    res.status(201).json({
-      message: 'Budget created successfully',
-      budgetId: result.insertId
-    });
-  } catch (error) {
-    console.error('Finance budget creation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get finance forecasts
-router.get('/admin/finance/forecasts', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const [forecasts] = await pool.execute(
-      'SELECT * FROM finance_forecasts ORDER BY id'
-    );
-    res.json(forecasts);
-  } catch (error) {
-    console.error('Finance forecasts fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-export default router;
+export default app;
