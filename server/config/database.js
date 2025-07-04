@@ -326,4 +326,4 @@ async function createTables() {
   }
 }
 
-export { pool }
+// Pool is already exported above with the initDatabase function
