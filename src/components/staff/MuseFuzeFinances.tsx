@@ -564,7 +564,7 @@ const MuseFuzeFinances: React.FC = () => {
                     </span>
                     {transaction.vat_amount > 0 && (
                       <span className="px-2 py-1 bg-yellow-900/30 text-yellow-300 rounded text-xs">
-                        VAT: £{transaction.vat_amount.toFixed(2)}
+                        VAT: £{(transaction.vat_amount || 0).toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -584,7 +584,7 @@ const MuseFuzeFinances: React.FC = () => {
                     {transaction.type === 'income' ? '+' : '-'}£{transaction.amount.toLocaleString()}
                   </div>
                   <div className="text-xs text-gray-400">
-                    {transaction.currency} • {transaction.vat_rate}% VAT
+                    {transaction.currency || 'GBP'} • {transaction.vat_rate || 0}% VAT
                   </div>
                 </div>
               </div>
