@@ -38,9 +38,6 @@ const BuildDownloads: React.FC = () => {
     } finally {
       setLoading(false);
     }
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleDownload = async (buildId: number, version: string) => {
