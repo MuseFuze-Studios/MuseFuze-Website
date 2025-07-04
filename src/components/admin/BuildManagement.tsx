@@ -59,14 +59,14 @@ const BuildManagement: React.FC = () => {
     
     const formDataToSend = new FormData();
     formDataToSend.append('buildFile', selectedFile);
+    formDataToSend.append('name', formData.title);
     formDataToSend.append('version', formData.version);
-    formDataToSend.append('title', formData.title);
     formDataToSend.append('description', formData.description);
     formDataToSend.append('testInstructions', formData.testInstructions);
     formDataToSend.append('knownIssues', formData.knownIssues);
 
     try {
-      const response = await fetch('http://localhost:5000/api/builds/upload', {
+      const response = await fetch('/api/staff/builds/upload', {
         method: 'POST',
         credentials: 'include',
         body: formDataToSend,
@@ -101,7 +101,7 @@ const BuildManagement: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/builds/${id}`, {
+      const response = await fetch(`/api/staff/builds/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });

@@ -28,10 +28,6 @@ const BuildDownloads: React.FC = () => {
       const response = await staffAPI.getBuilds();
       const buildsData = response.data.builds || response.data;
       setBuilds(buildsData);
-    } catch (error) {
-      console.error('Failed to fetch builds:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

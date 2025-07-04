@@ -1,9 +1,44 @@
 import express from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { pool } from '../config/database.js';
 import { authenticateToken, requireStaff } from '../middleware/auth.js';
 import { validateBugReport, validateReview, validatePlaytestSession, validateFinanceTransaction, validateBudget, handleValidationErrors } from '../middleware/validation.js';
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/builds';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 500 * 1024 * 1024, // 500MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['.zip', '.rar', '.7z', '.exe'];
+    const fileExt = path.extname(file.originalname).toLowerCase();
+    
+    if (allowedTypes.includes(fileExt)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only ZIP, RAR, 7Z, and EXE files are allowed.'));
+    }
+  }
+});
 
 // Apply staff authentication to all routes
 router.use(authenticateToken);
@@ -139,6 +174,86 @@ router.get('/builds', async (req, res) => {
   }
 });
 
+// Build upload endpoint
+router.post('/builds/upload', upload.single('buildFile'), async (req, res) => {
+  try {
+    if (!['developer', 'staff', 'admin', 'ceo'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions to upload builds' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { name, version, description, testInstructions, knownIssues, externalUrl } = req.body;
+
+    if (!name || !version) {
+      return res.status(400).json({ error: 'Name and version are required' });
+    }
+
+    const [result] = await pool.execute(`
+      INSERT INTO game_builds (name, version, description, file_path, file_size, external_url, test_instructions, known_issues, uploaded_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      name,
+      version,
+      description || null,
+      req.file.path,
+      req.file.size,
+      externalUrl || null,
+      testInstructions || null,
+      knownIssues || null,
+      req.user.id
+    ]);
+
+    res.status(201).json({ 
+      message: 'Build uploaded successfully',
+      buildId: result.insertId
+    });
+  } catch (error) {
+    console.error('Failed to upload build:', error);
+    
+    // Clean up uploaded file if database insert failed
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Build deletion endpoint
+router.delete('/builds/:id', async (req, res) => {
+  try {
+    if (!['developer', 'staff', 'admin', 'ceo'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions to delete builds' });
+    }
+
+    const buildId = req.params.id;
+    
+    // Get build info to delete file
+    const [builds] = await pool.execute('SELECT file_path FROM game_builds WHERE id = ?', [buildId]);
+    
+    if (builds.length === 0) {
+      return res.status(404).json({ error: 'Build not found' });
+    }
+
+    // Delete from database
+    await pool.execute('UPDATE game_builds SET isActive = FALSE WHERE id = ?', [buildId]);
+    
+    // Delete physical file
+    const filePath = builds[0].file_path;
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    res.json({ message: 'Build deleted successfully' });
+  } catch (error) {
+    console.error('Failed to delete build:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Build download endpoint
 router.get('/builds/:id/download', async (req, res) => {
   try {
@@ -157,17 +272,23 @@ router.get('/builds/:id/download', async (req, res) => {
     
     // Log download
     await pool.execute(`
-      INSERT INTO download_history (build_id, user_id, ip_address, user_agent)
-      VALUES (?, ?, ?, ?)
-    `, [buildId, req.user.id, req.ip, req.get('User-Agent')]);
+      INSERT INTO download_history (build_id, user_id, ip_address, user_agent, file_size)
+      VALUES (?, ?, ?, ?, ?)
+    `, [buildId, req.user.id, req.ip, req.get('User-Agent'), build.file_size]);
     
-    // For now, return a mock file response
-    // In production, you would serve the actual file
-    const mockFileContent = `Mock build file for ${build.name} v${build.version}`;
-    
-    res.setHeader('Content-Disposition', `attachment; filename="${build.version}.zip"`);
-    res.setHeader('Content-Type', 'application/zip');
-    res.send(Buffer.from(mockFileContent));
+    // Serve the actual file if it exists
+    if (build.file_path && fs.existsSync(build.file_path)) {
+      const fileName = `${build.version}.${path.extname(build.file_path)}`;
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.sendFile(path.resolve(build.file_path));
+    } else {
+      // Fallback for builds without files (external URLs)
+      const mockFileContent = `Mock build file for ${build.name} v${build.version}`;
+      res.setHeader('Content-Disposition', `attachment; filename="${build.version}.zip"`);
+      res.setHeader('Content-Type', 'application/zip');
+      res.send(Buffer.from(mockFileContent));
+    }
     
   } catch (error) {
     console.error('Failed to download build:', error);
@@ -404,10 +525,13 @@ router.post('/finance/transactions', validateFinanceTransaction, handleValidatio
 
     const { type, category, amount, vat_rate, description, justification, hmrc_category, date } = req.body;
     
+    // Calculate VAT amount
+    const vatAmount = (amount * (vat_rate || 0)) / 100;
+    
     const [result] = await pool.execute(`
-      INSERT INTO finance_transactions (type, category, amount, vat_rate, description, justification, hmrc_category, responsible_staff_id, date)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [type, category, amount, vat_rate || 20.00, description, justification, hmrc_category, req.user.id, date]);
+      INSERT INTO finance_transactions (type, category, amount, currency, vat_rate, vat_amount, description, justification, hmrc_category, responsible_staff_id, date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [type, category, amount, 'GBP', vat_rate || 20.00, vatAmount, description, justification, hmrc_category, req.user.id, date]);
 
     res.status(201).json({ message: 'Transaction created successfully' });
   } catch (error) {
