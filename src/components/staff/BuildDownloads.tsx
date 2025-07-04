@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Calendar, FileText, AlertTriangle } from 'lucide-react';
+import { staffAPI } from '../../services/api';
 
 interface GameBuild {
   id: number;
@@ -24,13 +25,9 @@ const BuildDownloads: React.FC = () => {
 
   const fetchBuilds = async () => {
     try {
-      const response = await fetch('/api/staff/builds', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setBuilds(data.builds || data);
-      }
+      const response = await staffAPI.getBuilds();
+      const buildsData = response.data.builds || response.data;
+      setBuilds(buildsData);
     } catch (error) {
       console.error('Failed to fetch builds:', error);
     } finally {
@@ -42,38 +39,21 @@ const BuildDownloads: React.FC = () => {
     setDownloading(buildId);
     
     try {
-      const response = await fetch(`/api/staff/builds/download/${buildId}`, {
-        credentials: 'include'
-      });
+      const response = await staffAPI.downloadBuild(buildId);
 
-      if (response.ok) {
-        // Get the filename from the Content-Disposition header if available
-        const contentDisposition = response.headers.get('Content-Disposition');
-        let filename = `${version}.zip`;
-        
-        if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-          if (filenameMatch) {
-            filename = filenameMatch[1];
-          }
-        }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        alert(errorData.error || 'Failed to download build');
-      }
+      // Create blob and download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${version}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
       console.error('Download failed:', error);
-      alert('Download failed');
+      alert('Download failed. Please try again.');
     } finally {
       setDownloading(null);
     }

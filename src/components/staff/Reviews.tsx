@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Plus, Edit, Trash2, Search, MessageCircle, Calendar, User } from 'lucide-react';
+import { staffAPI } from '../../services/api';
 
 interface Review {
   id: number;
@@ -12,14 +13,6 @@ interface Review {
   reviewer_id: number;
   created_at: string;
   updated_at: string;
-  comments?: ReviewComment[];
-}
-
-interface ReviewComment {
-  id: number;
-  content: string;
-  author_name: string;
-  created_at: string;
 }
 
 interface GameBuild {
@@ -35,10 +28,8 @@ const Reviews: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
-  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [ratingFilter, setRatingFilter] = useState('all');
-  const [newComment, setNewComment] = useState('');
   const [formData, setFormData] = useState({
     build_id: '',
     rating: 5,
@@ -52,21 +43,16 @@ const Reviews: React.FC = () => {
   useEffect(() => {
     if (selectedBuild) {
       fetchReviews(selectedBuild);
-    } else if (builds.length > 0) {
-      setSelectedBuild(builds[0].id);
     }
-  }, [selectedBuild, builds]);
+  }, [selectedBuild]);
 
   const fetchBuilds = async () => {
     try {
-      const mockBuilds: GameBuild[] = [
-        { id: 1, version: 'v0.2.1', title: 'Alpha Build - Combat Update' },
-        { id: 2, version: 'v0.2.0', title: 'Alpha Build - Story Mode' },
-        { id: 3, version: 'v0.1.9', title: 'Pre-Alpha Build' }
-      ];
-      setBuilds(mockBuilds);
-      if (mockBuilds.length > 0) {
-        setSelectedBuild(mockBuilds[0].id);
+      const response = await staffAPI.getBuilds();
+      const buildsData = response.data.builds || response.data;
+      setBuilds(buildsData);
+      if (buildsData.length > 0) {
+        setSelectedBuild(buildsData[0].id);
       }
     } catch (error) {
       console.error('Failed to fetch builds:', error);
@@ -77,55 +63,8 @@ const Reviews: React.FC = () => {
 
   const fetchReviews = async (buildId: number) => {
     try {
-      const mockReviews: Review[] = [
-        {
-          id: 1,
-          build_id: buildId,
-          build_version: 'v0.2.1',
-          build_title: 'Alpha Build - Combat Update',
-          rating: 4,
-          feedback: "Combat feels much more responsive now. The new combo system is intuitive and satisfying. However, there are still some frame drops during intense battles.",
-          reviewer_name: 'John Doe',
-          reviewer_id: 1,
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 86400000).toISOString(),
-          comments: [
-            {
-              id: 1,
-              content: "Thanks for the feedback! We're working on the performance issues.",
-              author_name: "Jane Smith",
-              created_at: new Date(Date.now() - 43200000).toISOString()
-            }
-          ]
-        },
-        {
-          id: 2,
-          build_id: buildId,
-          build_version: 'v0.2.1',
-          build_title: 'Alpha Build - Combat Update',
-          rating: 5,
-          feedback: "Absolutely love the new visual effects! The particle systems during special attacks are stunning. Great work on the audio design too.",
-          reviewer_name: 'Sarah Wilson',
-          reviewer_id: 2,
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          updated_at: new Date(Date.now() - 172800000).toISOString(),
-          comments: []
-        },
-        {
-          id: 3,
-          build_id: buildId,
-          build_version: 'v0.2.1',
-          build_title: 'Alpha Build - Combat Update',
-          rating: 3,
-          feedback: "The gameplay improvements are solid, but I encountered several bugs with the inventory system. Items sometimes disappear after combat.",
-          reviewer_name: 'Mike Johnson',
-          reviewer_id: 3,
-          created_at: new Date(Date.now() - 259200000).toISOString(),
-          updated_at: new Date(Date.now() - 259200000).toISOString(),
-          comments: []
-        }
-      ];
-      setReviews(mockReviews);
+      const response = await staffAPI.getReviews(buildId);
+      setReviews(response.data);
     } catch (error) {
       console.error('Failed to fetch reviews:', error);
     }
@@ -133,16 +72,32 @@ const Reviews: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implementation would go here
-    setShowForm(false);
-    setEditingReview(null);
-    setFormData({ build_id: '', rating: 5, feedback: '' });
-  };
+    
+    try {
+      const data = {
+        build_id: parseInt(formData.build_id),
+        rating: formData.rating,
+        feedback: formData.feedback
+      };
 
-  const handleAddComment = async () => {
-    if (!newComment.trim() || !selectedReview) return;
-    // Implementation would add comment to review
-    setNewComment('');
+      if (editingReview) {
+        await staffAPI.updateReview(editingReview.id, {
+          rating: data.rating,
+          feedback: data.feedback
+        });
+      } else {
+        await staffAPI.createReview(data);
+      }
+
+      if (selectedBuild) {
+        fetchReviews(selectedBuild);
+      }
+      setShowForm(false);
+      setEditingReview(null);
+      setFormData({ build_id: '', rating: 5, feedback: '' });
+    } catch (error) {
+      console.error('Failed to save review:', error);
+    }
   };
 
   const handleEdit = (review: Review) => {
@@ -157,7 +112,15 @@ const Reviews: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this review?')) return;
-    // Implementation would delete review
+    
+    try {
+      await staffAPI.deleteReview(id);
+      if (selectedBuild) {
+        fetchReviews(selectedBuild);
+      }
+    } catch (error) {
+      console.error('Failed to delete review:', error);
+    }
   };
 
   const renderStars = (rating: number, interactive = false, onRatingChange?: (rating: number) => void) => {
@@ -377,85 +340,6 @@ const Reviews: React.FC = () => {
         </div>
       )}
 
-      {/* Review Detail Modal */}
-      {selectedReview && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-700">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <div className="flex items-center space-x-3 mb-2">
-                  <div className="flex">{renderStars(selectedReview.rating)}</div>
-                  <span className="text-lg font-semibold text-white">{selectedReview.rating}/5</span>
-                </div>
-                <p className="text-violet-300">{selectedReview.build_version} - {selectedReview.build_title}</p>
-              </div>
-              <button
-                onClick={() => setSelectedReview(null)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-lg font-semibold text-white mb-2">Review</h4>
-                <p className="text-gray-300 bg-gray-700/30 p-4 rounded-lg leading-relaxed">{selectedReview.feedback}</p>
-              </div>
-
-              <div className="flex items-center justify-between text-sm text-gray-400">
-                <div className="flex items-center space-x-1">
-                  <User className="h-4 w-4" />
-                  <span>By {selectedReview.reviewer_name}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>{new Date(selectedReview.created_at).toLocaleString()}</span>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-lg font-semibold text-white mb-4">Comments</h4>
-                <div className="space-y-4">
-                  {selectedReview.comments && selectedReview.comments.length > 0 ? (
-                    selectedReview.comments.map((comment) => (
-                      <div key={comment.id} className="bg-gray-700/30 p-4 rounded-lg">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-violet-300 font-medium">{comment.author_name}</span>
-                          <span className="text-gray-400 text-sm">
-                            {new Date(comment.created_at).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="text-gray-300">{comment.content}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-400 italic">No comments yet</p>
-                  )}
-
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Add a comment..."
-                      className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    />
-                    <button
-                      onClick={handleAddComment}
-                      disabled={!newComment.trim()}
-                      className="px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Reviews List */}
       <div className="space-y-4">
         {filteredReviews.length === 0 ? (
@@ -474,8 +358,7 @@ const Reviews: React.FC = () => {
           filteredReviews.map((review) => (
             <div
               key={review.id}
-              className="bg-gray-700/30 rounded-xl p-6 border border-gray-600 hover:border-violet-500/50 transition-all cursor-pointer group"
-              onClick={() => setSelectedReview(review)}
+              className="bg-gray-700/30 rounded-xl p-6 border border-gray-600 hover:border-violet-500/50 transition-all group"
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
@@ -497,33 +380,18 @@ const Reviews: React.FC = () => {
                       <Calendar className="h-4 w-4" />
                       <span>{new Date(review.created_at).toLocaleDateString()}</span>
                     </div>
-                    {review.comments && review.comments.length > 0 && (
-                      <>
-                        <span>•</span>
-                        <div className="flex items-center space-x-1">
-                          <MessageCircle className="h-4 w-4" />
-                          <span>{review.comments.length} comment{review.comments.length !== 1 ? 's' : ''}</span>
-                        </div>
-                      </>
-                    )}
                   </div>
                 </div>
                 
                 <div className="flex space-x-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit(review);
-                    }}
+                    onClick={() => handleEdit(review)}
                     className="p-2 text-gray-400 hover:text-violet-400 transition-colors rounded-lg hover:bg-gray-600/50"
                   >
                     <Edit className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(review.id);
-                    }}
+                    onClick={() => handleDelete(review.id)}
                     className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-gray-600/50"
                   >
                     <Trash2 className="h-4 w-4" />

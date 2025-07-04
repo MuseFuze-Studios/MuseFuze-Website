@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, AlertCircle, Clock, CheckCircle, User, Search, Filter, MessageCircle, Calendar } from 'lucide-react';
+import { staffAPI } from '../../services/api';
 
 interface BugReport {
   id: number;
@@ -17,14 +18,6 @@ interface BugReport {
   assignee_name?: string;
   created_at: string;
   updated_at: string;
-  comments?: BugComment[];
-}
-
-interface BugComment {
-  id: number;
-  content: string;
-  author_name: string;
-  created_at: string;
 }
 
 interface TeamMember {
@@ -50,7 +43,6 @@ const BugReports: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [newComment, setNewComment] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -62,109 +54,62 @@ const BugReports: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchBugs();
-    fetchTeamMembers();
-    fetchBuilds();
+    fetchData();
   }, []);
 
-  const fetchBugs = async () => {
+  const fetchData = async () => {
     try {
-      // Mock data for demonstration
-      const mockBugs: BugReport[] = [
-        {
-          id: 1,
-          title: "Player movement stutters on low-end devices",
-          description: "Movement feels choppy when frame rate drops below 30fps",
-          priority: 'high',
-          status: 'in_progress',
-          tags: ['performance', 'movement'],
-          build_version: 'v0.2.1',
-          build_title: 'Alpha Build',
-          reported_by: 1,
-          reporter_name: 'John Doe',
-          assigned_to: 2,
-          assignee_name: 'Jane Smith',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 43200000).toISOString(),
-          comments: [
-            {
-              id: 1,
-              content: "Reproduced on Android devices with 2GB RAM",
-              author_name: "Jane Smith",
-              created_at: new Date(Date.now() - 21600000).toISOString()
-            }
-          ]
-        },
-        {
-          id: 2,
-          title: "Audio cuts out during cutscenes",
-          description: "Background music stops playing randomly during story sequences",
-          priority: 'medium',
-          status: 'open',
-          tags: ['audio', 'cutscenes'],
-          build_version: 'v0.2.1',
-          build_title: 'Alpha Build',
-          reported_by: 3,
-          reporter_name: 'Mike Johnson',
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          updated_at: new Date(Date.now() - 172800000).toISOString(),
-          comments: []
-        }
-      ];
-      setBugs(mockBugs);
+      const [bugsRes, membersRes, buildsRes] = await Promise.all([
+        staffAPI.getBugs(),
+        staffAPI.getTeamMembers(),
+        staffAPI.getBuilds()
+      ]);
+      
+      setBugs(bugsRes.data);
+      setTeamMembers(membersRes.data);
+      setBuilds(buildsRes.data.builds || buildsRes.data);
     } catch (error) {
-      console.error('Failed to fetch bugs:', error);
+      console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchTeamMembers = async () => {
-    try {
-      const mockMembers: TeamMember[] = [
-        { id: 1, username: 'john_doe', role: 'developer' },
-        { id: 2, username: 'jane_smith', role: 'developer' },
-        { id: 3, username: 'mike_johnson', role: 'tester' }
-      ];
-      setTeamMembers(mockMembers);
-    } catch (error) {
-      console.error('Failed to fetch team members:', error);
-    }
-  };
-
-  const fetchBuilds = async () => {
-    try {
-      const mockBuilds: GameBuild[] = [
-        { id: 1, version: 'v0.2.1', title: 'Alpha Build' },
-        { id: 2, version: 'v0.2.0', title: 'Previous Alpha' }
-      ];
-      setBuilds(mockBuilds);
-    } catch (error) {
-      console.error('Failed to fetch builds:', error);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implementation would go here
-    setShowForm(false);
-    setEditingBug(null);
-    setFormData({ 
-      title: '', 
-      description: '', 
-      priority: 'medium', 
-      build_id: '', 
-      tags: '', 
-      assigned_to: '', 
-      status: 'open' 
-    });
-  };
-
-  const handleAddComment = async () => {
-    if (!newComment.trim() || !selectedBug) return;
     
-    // Implementation would add comment to bug
-    setNewComment('');
+    try {
+      const data = {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        build_id: formData.build_id ? parseInt(formData.build_id) : undefined,
+        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [],
+        assigned_to: formData.assigned_to ? parseInt(formData.assigned_to) : undefined,
+        ...(editingBug && { status: formData.status })
+      };
+
+      if (editingBug) {
+        await staffAPI.updateBug(editingBug.id, data);
+      } else {
+        await staffAPI.createBug(data);
+      }
+
+      fetchData();
+      setShowForm(false);
+      setEditingBug(null);
+      setFormData({ 
+        title: '', 
+        description: '', 
+        priority: 'medium', 
+        build_id: '', 
+        tags: '', 
+        assigned_to: '', 
+        status: 'open' 
+      });
+    } catch (error) {
+      console.error('Failed to save bug:', error);
+    }
   };
 
   const handleEdit = (bug: BugReport) => {
@@ -183,7 +128,13 @@ const BugReports: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this bug report?')) return;
-    // Implementation would delete bug
+    
+    try {
+      await staffAPI.deleteBug(id);
+      fetchData();
+    } catch (error) {
+      console.error('Failed to delete bug:', error);
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -516,44 +467,6 @@ const BugReports: React.FC = () => {
                   </div>
                 )}
               </div>
-
-              <div>
-                <h4 className="text-lg font-semibold text-white mb-4">Comments</h4>
-                <div className="space-y-4">
-                  {selectedBug.comments && selectedBug.comments.length > 0 ? (
-                    selectedBug.comments.map((comment) => (
-                      <div key={comment.id} className="bg-gray-700/30 p-4 rounded-lg">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-violet-300 font-medium">{comment.author_name}</span>
-                          <span className="text-gray-400 text-sm">
-                            {new Date(comment.created_at).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="text-gray-300">{comment.content}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-400 italic">No comments yet</p>
-                  )}
-
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Add a comment..."
-                      className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    />
-                    <button
-                      onClick={handleAddComment}
-                      disabled={!newComment.trim()}
-                      className="px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -628,15 +541,6 @@ const BugReports: React.FC = () => {
                       <>
                         <span>•</span>
                         <span>Assigned to {bug.assignee_name}</span>
-                      </>
-                    )}
-                    {bug.comments && bug.comments.length > 0 && (
-                      <>
-                        <span>•</span>
-                        <div className="flex items-center space-x-1">
-                          <MessageCircle className="h-4 w-4" />
-                          <span>{bug.comments.length} comment{bug.comments.length !== 1 ? 's' : ''}</span>
-                        </div>
                       </>
                     )}
                   </div>

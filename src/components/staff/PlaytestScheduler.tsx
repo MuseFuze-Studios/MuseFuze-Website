@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, CheckCircle, XCircle, AlertCircle, Plus, Search, Filter, MapPin, FileText } from 'lucide-react';
+import { Calendar, Clock, Users, CheckCircle, XCircle, AlertCircle, Plus, Search, MapPin, FileText } from 'lucide-react';
+import { staffAPI } from '../../services/api';
 
 interface PlaytestSession {
   id: number;
@@ -23,21 +24,10 @@ interface RSVP {
   notes: string | null;
 }
 
-interface PlaytestResult {
-  id: number;
-  session_id: number;
-  participant_name: string;
-  feedback: string;
-  rating: number;
-  bugs_found: number;
-  completion_time: number;
-  created_at: string;
-}
-
 const PlaytestScheduler: React.FC = () => {
   const [sessions, setSessions] = useState<PlaytestSession[]>([]);
   const [rsvps, setRsvps] = useState<{ [key: number]: RSVP }>({});
-  const [results, setResults] = useState<{ [key: number]: PlaytestResult[] }>({});
+  const [builds, setBuilds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedSession, setSelectedSession] = useState<PlaytestSession | null>(null);
@@ -56,100 +46,34 @@ const PlaytestScheduler: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchSessions();
+    fetchData();
   }, []);
 
-  const fetchSessions = async () => {
+  const fetchData = async () => {
     try {
-      // Mock data for demonstration
-      const mockSessions: PlaytestSession[] = [
-        {
-          id: 1,
-          title: "Combat System Testing",
-          description: "Focus on new combo mechanics and weapon balancing",
-          build_version: 'v0.2.1',
-          build_title: 'Alpha Build - Combat Update',
-          scheduled_date: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-          duration_minutes: 90,
-          max_participants: 8,
-          rsvp_count: 6,
-          created_by_name: 'Jane Smith',
-          location: 'Conference Room A',
-          test_focus: 'Combat mechanics, weapon balance, combo system',
-          requirements: 'Previous alpha testing experience preferred',
-          status: 'upcoming'
-        },
-        {
-          id: 2,
-          title: "Story Mode Playthrough",
-          description: "Complete playthrough of Chapter 1-3 with narrative feedback",
-          build_version: 'v0.2.0',
-          build_title: 'Alpha Build - Story Mode',
-          scheduled_date: new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow
-          duration_minutes: 120,
-          max_participants: 6,
-          rsvp_count: 4,
-          created_by_name: 'Mike Johnson',
-          location: 'Remote (Discord)',
-          test_focus: 'Story pacing, dialogue, character development',
-          requirements: 'Must have completed previous builds',
-          status: 'upcoming'
-        },
-        {
-          id: 3,
-          title: "Performance Testing",
-          description: "Test performance on various hardware configurations",
-          build_version: 'v0.1.9',
-          build_title: 'Pre-Alpha Build',
-          scheduled_date: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-          duration_minutes: 60,
-          max_participants: 12,
-          rsvp_count: 10,
-          created_by_name: 'Sarah Wilson',
-          location: 'Testing Lab',
-          test_focus: 'Frame rate, loading times, memory usage',
-          requirements: 'Various hardware setups available',
-          status: 'completed'
-        }
-      ];
-      setSessions(mockSessions);
+      const [sessionsRes, buildsRes] = await Promise.all([
+        staffAPI.getPlaytestSessions(),
+        staffAPI.getBuilds()
+      ]);
       
-      // Mock RSVP data
-      const mockRsvps = {
-        1: { status: 'attending' as const, notes: 'Looking forward to testing the new combat!' },
-        2: { status: 'maybe' as const, notes: 'Depends on work schedule' },
-        3: { status: 'attending' as const, notes: null }
-      };
-      setRsvps(mockRsvps);
+      setSessions(sessionsRes.data);
+      setBuilds(buildsRes.data.builds || buildsRes.data);
 
-      // Mock results for completed sessions
-      const mockResults = {
-        3: [
-          {
-            id: 1,
-            session_id: 3,
-            participant_name: 'John Doe',
-            feedback: 'Performance was smooth on high-end setup, but noticed frame drops on medium settings',
-            rating: 4,
-            bugs_found: 2,
-            completion_time: 45,
-            created_at: new Date(Date.now() - 43200000).toISOString()
-          },
-          {
-            id: 2,
-            session_id: 3,
-            participant_name: 'Alice Brown',
-            feedback: 'Loading times were acceptable, but memory usage seems high',
-            rating: 3,
-            bugs_found: 1,
-            completion_time: 55,
-            created_at: new Date(Date.now() - 43200000).toISOString()
-          }
-        ]
-      };
-      setResults(mockResults);
+      // Fetch RSVPs for each session
+      const rsvpPromises = sessionsRes.data.map((session: PlaytestSession) =>
+        staffAPI.getPlaytestRSVP(session.id).catch(() => ({ data: { status: null, notes: null } }))
+      );
+      
+      const rsvpResults = await Promise.all(rsvpPromises);
+      const rsvpMap: { [key: number]: RSVP } = {};
+      
+      sessionsRes.data.forEach((session: PlaytestSession, index: number) => {
+        rsvpMap[session.id] = rsvpResults[index].data;
+      });
+      
+      setRsvps(rsvpMap);
     } catch (error) {
-      console.error('Failed to fetch sessions:', error);
+      console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -157,8 +81,9 @@ const PlaytestScheduler: React.FC = () => {
 
   const handleRSVP = async (sessionId: number, status: 'attending' | 'maybe' | 'not_attending', notes: string = '') => {
     try {
+      await staffAPI.rsvpPlaytest(sessionId, { status, notes });
       setRsvps(prev => ({ ...prev, [sessionId]: { status, notes } }));
-      // Implementation would update RSVP on server
+      fetchData(); // Refresh to update participant counts
     } catch (error) {
       console.error('Failed to update RSVP:', error);
     }
@@ -166,19 +91,34 @@ const PlaytestScheduler: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implementation would create new session
-    setShowForm(false);
-    setFormData({
-      title: '',
-      description: '',
-      build_id: '',
-      scheduled_date: '',
-      duration_minutes: 60,
-      max_participants: 10,
-      location: '',
-      test_focus: '',
-      requirements: ''
-    });
+    
+    try {
+      const data = {
+        title: formData.title,
+        description: formData.description,
+        build_id: parseInt(formData.build_id),
+        scheduled_date: formData.scheduled_date,
+        duration_minutes: formData.duration_minutes,
+        max_participants: formData.max_participants
+      };
+
+      await staffAPI.createPlaytestSession(data);
+      fetchData();
+      setShowForm(false);
+      setFormData({
+        title: '',
+        description: '',
+        build_id: '',
+        scheduled_date: '',
+        duration_minutes: 60,
+        max_participants: 10,
+        location: '',
+        test_focus: '',
+        requirements: ''
+      });
+    } catch (error) {
+      console.error('Failed to create session:', error);
+    }
   };
 
   const getStatusIcon = (status: string | null) => {
@@ -293,6 +233,25 @@ const PlaytestScheduler: React.FC = () => {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Build *
+                </label>
+                <select
+                  value={formData.build_id}
+                  onChange={(e) => setFormData({ ...formData, build_id: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
+                  <option value="">Select a build</option>
+                  {builds.map((build) => (
+                    <option key={build.id} value={build.id}>
+                      {build.version} - {build.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -323,59 +282,18 @@ const PlaytestScheduler: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Max Participants *
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.max_participants}
-                    onChange={(e) => setFormData({ ...formData, max_participants: parseInt(e.target.value) })}
-                    required
-                    min="1"
-                    max="50"
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="Conference Room A, Remote, etc."
-                  />
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Test Focus
+                  Max Participants *
                 </label>
                 <input
-                  type="text"
-                  value={formData.test_focus}
-                  onChange={(e) => setFormData({ ...formData, test_focus: e.target.value })}
+                  type="number"
+                  value={formData.max_participants}
+                  onChange={(e) => setFormData({ ...formData, max_participants: parseInt(e.target.value) })}
+                  required
+                  min="1"
+                  max="50"
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  placeholder="What specific areas should testers focus on?"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Requirements
-                </label>
-                <textarea
-                  value={formData.requirements}
-                  onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                  rows={2}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  placeholder="Any special requirements or prerequisites for participants"
                 />
               </div>
 
@@ -395,152 +313,6 @@ const PlaytestScheduler: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Session Detail Modal */}
-      {selectedSession && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-700">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">{selectedSession.title}</h3>
-                <div className="flex items-center space-x-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSessionStatusColor(selectedSession.status)}`}>
-                    {selectedSession.status.replace('_', ' ').toUpperCase()}
-                  </span>
-                  <span className="text-violet-300">{selectedSession.build_version}</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedSession(null)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="grid lg:grid-cols-2 gap-8">
-              <div className="space-y-6">
-                <div>
-                  <h4 className="text-lg font-semibold text-white mb-2">Session Details</h4>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-300">{new Date(selectedSession.scheduled_date).toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-300">{selectedSession.duration_minutes} minutes</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-300">{selectedSession.rsvp_count}/{selectedSession.max_participants} participants</span>
-                    </div>
-                    {selectedSession.location && (
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-300">{selectedSession.location}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {selectedSession.description && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-white mb-2">Description</h4>
-                    <p className="text-gray-300 bg-gray-700/30 p-3 rounded-lg">{selectedSession.description}</p>
-                  </div>
-                )}
-
-                {selectedSession.test_focus && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-white mb-2">Test Focus</h4>
-                    <p className="text-gray-300 bg-blue-900/20 p-3 rounded-lg border border-blue-500/30">{selectedSession.test_focus}</p>
-                  </div>
-                )}
-
-                {selectedSession.requirements && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-white mb-2">Requirements</h4>
-                    <p className="text-gray-300 bg-yellow-900/20 p-3 rounded-lg border border-yellow-500/30">{selectedSession.requirements}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-6">
-                {selectedSession.status === 'upcoming' && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-white mb-4">Your RSVP</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2 mb-2">
-                        {getStatusIcon(rsvps[selectedSession.id]?.status)}
-                        <span className="text-sm text-gray-400">
-                          {rsvps[selectedSession.id]?.status ? rsvps[selectedSession.id].status.replace('_', ' ').toUpperCase() : 'No Response'}
-                        </span>
-                      </div>
-                      
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleRSVP(selectedSession.id, 'attending')}
-                          className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                            rsvps[selectedSession.id]?.status === 'attending' 
-                              ? 'bg-green-600 text-white' 
-                              : 'bg-gray-700 text-gray-300 hover:bg-green-600 hover:text-white'
-                          }`}
-                        >
-                          Attending
-                        </button>
-                        <button
-                          onClick={() => handleRSVP(selectedSession.id, 'maybe')}
-                          className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                            rsvps[selectedSession.id]?.status === 'maybe' 
-                              ? 'bg-yellow-600 text-white' 
-                              : 'bg-gray-700 text-gray-300 hover:bg-yellow-600 hover:text-white'
-                          }`}
-                        >
-                          Maybe
-                        </button>
-                        <button
-                          onClick={() => handleRSVP(selectedSession.id, 'not_attending')}
-                          className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                            rsvps[selectedSession.id]?.status === 'not_attending' 
-                              ? 'bg-red-600 text-white' 
-                              : 'bg-gray-700 text-gray-300 hover:bg-red-600 hover:text-white'
-                          }`}
-                        >
-                          Can't Attend
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedSession.status === 'completed' && results[selectedSession.id] && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-white mb-4">Test Results</h4>
-                    <div className="space-y-4">
-                      {results[selectedSession.id].map((result) => (
-                        <div key={result.id} className="bg-gray-700/30 p-4 rounded-lg">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-violet-300 font-medium">{result.participant_name}</span>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-yellow-400">★ {result.rating}/5</span>
-                              <span className="text-gray-400 text-sm">{result.completion_time}min</span>
-                            </div>
-                          </div>
-                          <p className="text-gray-300 text-sm mb-2">{result.feedback}</p>
-                          <div className="text-xs text-gray-400">
-                            Bugs found: {result.bugs_found} • {new Date(result.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -668,15 +440,6 @@ const PlaytestScheduler: React.FC = () => {
                         >
                           No
                         </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {session.status === 'completed' && results[session.id] && (
-                    <div className="ml-6 text-right">
-                      <div className="text-sm text-gray-400 mb-1">Results Available</div>
-                      <div className="text-xs text-gray-500">
-                        {results[session.id].length} participant{results[session.id].length !== 1 ? 's' : ''}
                       </div>
                     </div>
                   )}

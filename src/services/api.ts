@@ -164,6 +164,7 @@ export const staffAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   deleteBuild: (id: number) => api.delete(`/staff/builds/${id}`),
+  downloadBuild: (id: number) => api.get(`/staff/builds/download/${id}`, { responseType: 'blob' }),
   
   // Message board
   getMessages: () => api.get('/staff/messages'),
@@ -173,6 +174,86 @@ export const staffAPI = {
   updateMessage: (id: number, data: { title: string; content: string }) =>
     api.put(`/staff/messages/${id}`, data),
   deleteMessage: (id: number) => api.delete(`/staff/messages/${id}`),
+
+  // Bug reports
+  getBugs: () => api.get('/bugs'),
+  createBug: (data: {
+    title: string;
+    description: string;
+    priority: string;
+    build_id?: number;
+    tags?: string[];
+    assigned_to?: number;
+  }) => api.post('/bugs', data),
+  updateBug: (id: number, data: {
+    title?: string;
+    description?: string;
+    priority?: string;
+    status?: string;
+    tags?: string[];
+    assigned_to?: number;
+    build_id?: number;
+  }) => api.put(`/bugs/${id}`, data),
+  deleteBug: (id: number) => api.delete(`/bugs/${id}`),
+  getTeamMembers: () => api.get('/bugs/team-members'),
+
+  // Reviews
+  getReviews: (buildId: number) => api.get(`/reviews/build/${buildId}`),
+  createReview: (data: {
+    build_id: number;
+    rating: number;
+    feedback: string;
+  }) => api.post('/reviews', data),
+  updateReview: (id: number, data: {
+    rating?: number;
+    feedback?: string;
+  }) => api.put(`/reviews/${id}`, data),
+  deleteReview: (id: number) => api.delete(`/reviews/${id}`),
+
+  // Playtest sessions
+  getPlaytestSessions: () => api.get('/playtest/sessions'),
+  createPlaytestSession: (data: {
+    title: string;
+    description?: string;
+    build_id: number;
+    scheduled_date: string;
+    duration_minutes: number;
+    max_participants: number;
+  }) => api.post('/playtest/sessions', data),
+  rsvpPlaytest: (sessionId: number, data: {
+    status: 'attending' | 'maybe' | 'not_attending';
+    notes?: string;
+  }) => api.post(`/playtest/sessions/${sessionId}/rsvp`, data),
+  getPlaytestRSVP: (sessionId: number) => api.get(`/playtest/sessions/${sessionId}/rsvp`),
+  getPlaytestRSVPs: (sessionId: number) => api.get(`/playtest/sessions/${sessionId}/rsvps`),
+
+  // Download history
+  getDownloadHistory: () => api.get('/builds/downloads'),
+
+  // Team announcements
+  getAnnouncements: () => api.get('/announcements'),
+
+  // Finance API (admin only)
+  getFinanceData: () => api.get('/admin/finance'),
+  createTransaction: (data: {
+    type: 'income' | 'expense';
+    category: string;
+    amount: number;
+    description: string;
+    justification: string;
+  }) => api.post('/admin/finance/transactions', data),
+  createBudget: (data: {
+    category: string;
+    allocated: number;
+    period: 'monthly' | 'quarterly' | 'yearly';
+  }) => api.post('/admin/finance/budgets', data),
+  updateBudget: (id: number, data: {
+    allocated?: number;
+    period?: string;
+  }) => api.put(`/admin/finance/budgets/${id}`, data),
+  getTransactions: () => api.get('/admin/finance/transactions'),
+  getBudgets: () => api.get('/admin/finance/budgets'),
+  getForecasts: () => api.get('/admin/finance/forecasts'),
 };
 
 export default api;

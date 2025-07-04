@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, TrendingDown, PieChart, Plus, Calendar, Receipt, AlertTriangle, Target, CreditCard } from 'lucide-react';
+import { staffAPI } from '../../services/api';
 
 interface Transaction {
   id: number;
@@ -55,122 +56,21 @@ const MuseFuzeFinances: React.FC = () => {
 
   const fetchFinancialData = async () => {
     try {
-      // Mock data for demonstration
-      const mockTransactions: Transaction[] = [
-        {
-          id: 1,
-          type: 'expense',
-          category: 'Software Licenses',
-          amount: 299.99,
-          description: 'Unity Pro subscription renewal',
-          responsible_staff: 'John Doe',
-          justification: 'Required for advanced rendering features in upcoming build',
-          date: new Date(Date.now() - 86400000).toISOString(),
-          status: 'approved'
-        },
-        {
-          id: 2,
-          type: 'expense',
-          category: 'Marketing',
-          amount: 150.00,
-          description: 'Social media advertising campaign',
-          responsible_staff: 'Sarah Wilson',
-          justification: 'Promote alpha build to increase tester recruitment',
-          date: new Date(Date.now() - 172800000).toISOString(),
-          status: 'approved'
-        },
-        {
-          id: 3,
-          type: 'income',
-          category: 'Funding',
-          amount: 5000.00,
-          description: 'Angel investor contribution',
-          responsible_staff: 'Mike Johnson',
-          justification: 'Series A funding round - development milestone reached',
-          date: new Date(Date.now() - 259200000).toISOString(),
-          status: 'approved'
-        },
-        {
-          id: 4,
-          type: 'expense',
-          category: 'Hardware',
-          amount: 1200.00,
-          description: 'Development workstation upgrade',
-          responsible_staff: 'Alice Brown',
-          justification: 'Current hardware insufficient for performance testing',
-          date: new Date(Date.now() - 345600000).toISOString(),
-          status: 'pending'
-        },
-        {
-          id: 5,
-          type: 'expense',
-          category: 'Services',
-          amount: 89.99,
-          description: 'Cloud storage and backup services',
-          responsible_staff: 'David Lee',
-          justification: 'Secure backup solution for source code and assets',
-          date: new Date(Date.now() - 432000000).toISOString(),
-          status: 'approved'
-        }
-      ];
-
-      const mockBudgets: Budget[] = [
-        {
-          id: 1,
-          category: 'Software Licenses',
-          allocated: 500.00,
-          spent: 299.99,
-          period: 'monthly',
-          last_updated: new Date().toISOString()
-        },
-        {
-          id: 2,
-          category: 'Marketing',
-          allocated: 300.00,
-          spent: 150.00,
-          period: 'monthly',
-          last_updated: new Date().toISOString()
-        },
-        {
-          id: 3,
-          category: 'Hardware',
-          allocated: 2000.00,
-          spent: 1200.00,
-          period: 'quarterly',
-          last_updated: new Date().toISOString()
-        },
-        {
-          id: 4,
-          category: 'Services',
-          allocated: 200.00,
-          spent: 89.99,
-          period: 'monthly',
-          last_updated: new Date().toISOString()
-        },
-        {
-          id: 5,
-          category: 'Development',
-          allocated: 1500.00,
-          spent: 0,
-          period: 'monthly',
-          last_updated: new Date().toISOString()
-        }
-      ];
-
-      const mockForecasts: Forecast[] = [
-        { month: 'Jan 2025', estimated: 3000, actual: 2850 },
-        { month: 'Feb 2025', estimated: 3200, actual: 3100 },
-        { month: 'Mar 2025', estimated: 2800, actual: 2950 },
-        { month: 'Apr 2025', estimated: 3500, actual: 0 }, // Future month
-        { month: 'May 2025', estimated: 3300, actual: 0 }, // Future month
-        { month: 'Jun 2025', estimated: 3600, actual: 0 }  // Future month
-      ];
-
-      setTransactions(mockTransactions);
-      setBudgets(mockBudgets);
-      setForecasts(mockForecasts);
+      const [transactionsRes, budgetsRes, forecastsRes] = await Promise.all([
+        staffAPI.getTransactions(),
+        staffAPI.getBudgets(),
+        staffAPI.getForecasts()
+      ]);
+      
+      setTransactions(transactionsRes.data);
+      setBudgets(budgetsRes.data);
+      setForecasts(forecastsRes.data);
     } catch (error) {
       console.error('Failed to fetch financial data:', error);
+      // Set empty arrays as fallback
+      setTransactions([]);
+      setBudgets([]);
+      setForecasts([]);
     } finally {
       setLoading(false);
     }
@@ -178,26 +78,40 @@ const MuseFuzeFinances: React.FC = () => {
 
   const handleTransactionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implementation would submit transaction
-    setShowTransactionForm(false);
-    setTransactionForm({
-      type: 'expense',
-      category: '',
-      amount: 0,
-      description: '',
-      justification: ''
-    });
+    
+    try {
+      await staffAPI.createTransaction(transactionForm);
+      fetchFinancialData();
+      setShowTransactionForm(false);
+      setTransactionForm({
+        type: 'expense',
+        category: '',
+        amount: 0,
+        description: '',
+        justification: ''
+      });
+    } catch (error) {
+      console.error('Failed to create transaction:', error);
+      alert('Failed to create transaction. Please try again.');
+    }
   };
 
   const handleBudgetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implementation would submit budget
-    setShowBudgetForm(false);
-    setBudgetForm({
-      category: '',
-      allocated: 0,
-      period: 'monthly'
-    });
+    
+    try {
+      await staffAPI.createBudget(budgetForm);
+      fetchFinancialData();
+      setShowBudgetForm(false);
+      setBudgetForm({
+        category: '',
+        allocated: 0,
+        period: 'monthly'
+      });
+    } catch (error) {
+      console.error('Failed to create budget:', error);
+      alert('Failed to create budget. Please try again.');
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -306,7 +220,7 @@ const MuseFuzeFinances: React.FC = () => {
         <div className="bg-gradient-to-br from-violet-900/30 to-violet-800/30 rounded-xl p-6 border border-violet-500/30">
           <div className="flex items-center justify-between mb-4">
             <Target className="h-8 w-8 text-violet-400" />
-            <span className="text-2xl font-bold text-white">{Math.round((totalBudgetSpent / totalBudgetAllocated) * 100)}%</span>
+            <span className="text-2xl font-bold text-white">{totalBudgetAllocated > 0 ? Math.round((totalBudgetSpent / totalBudgetAllocated) * 100) : 0}%</span>
           </div>
           <h3 className="text-violet-300 font-medium mb-2">Budget Used</h3>
           <div className="text-sm text-gray-400">${totalBudgetSpent.toLocaleString()} / ${totalBudgetAllocated.toLocaleString()}</div>
@@ -333,33 +247,40 @@ const MuseFuzeFinances: React.FC = () => {
           </div>
           
           <div className="space-y-4">
-            {budgets.filter(b => b.period === selectedPeriod).map((budget) => {
-              const percentage = (budget.spent / budget.allocated) * 100;
-              return (
-                <div key={budget.id} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className={`px-2 py-1 rounded text-sm font-medium ${getCategoryColor(budget.category)}`}>
-                      {budget.category}
-                    </span>
-                    <div className="text-right">
-                      <div className="text-white font-medium">${budget.spent.toLocaleString()} / ${budget.allocated.toLocaleString()}</div>
-                      <div className={`text-sm font-medium ${getBudgetUsageColor(percentage).split(' ')[0]}`}>
-                        {percentage.toFixed(1)}%
+            {budgets.filter(b => b.period === selectedPeriod).length > 0 ? (
+              budgets.filter(b => b.period === selectedPeriod).map((budget) => {
+                const percentage = budget.allocated > 0 ? (budget.spent / budget.allocated) * 100 : 0;
+                return (
+                  <div key={budget.id} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className={`px-2 py-1 rounded text-sm font-medium ${getCategoryColor(budget.category)}`}>
+                        {budget.category}
+                      </span>
+                      <div className="text-right">
+                        <div className="text-white font-medium">${budget.spent.toLocaleString()} / ${budget.allocated.toLocaleString()}</div>
+                        <div className={`text-sm font-medium ${getBudgetUsageColor(percentage).split(' ')[0]}`}>
+                          {percentage.toFixed(1)}%
+                        </div>
                       </div>
                     </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          percentage >= 90 ? 'bg-red-500' :
+                          percentage >= 75 ? 'bg-yellow-500' : 'bg-green-500'
+                        }`}
+                        style={{ width: `${Math.min(percentage, 100)}%` }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        percentage >= 90 ? 'bg-red-500' :
-                        percentage >= 75 ? 'bg-yellow-500' : 'bg-green-500'
-                      }`}
-                      style={{ width: `${Math.min(percentage, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="text-center py-8">
+                <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-400">No budgets set for {selectedPeriod} period</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -371,25 +292,32 @@ const MuseFuzeFinances: React.FC = () => {
           </h3>
           
           <div className="space-y-4">
-            {forecasts.map((forecast, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <span className="text-gray-300">{forecast.month}</span>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="text-blue-400 text-sm">Est: ${forecast.estimated.toLocaleString()}</div>
-                    {forecast.actual > 0 && (
-                      <div className="text-white text-sm">Act: ${forecast.actual.toLocaleString()}</div>
-                    )}
-                  </div>
-                  <div className="w-24 bg-gray-700 rounded-full h-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full"
-                      style={{ width: `${forecast.actual > 0 ? (forecast.actual / forecast.estimated) * 100 : 0}%` }}
-                    ></div>
+            {forecasts.length > 0 ? (
+              forecasts.map((forecast, index) => (
+                <div key={index} className="flex justify-between items-center">
+                  <span className="text-gray-300">{forecast.month}</span>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <div className="text-blue-400 text-sm">Est: ${forecast.estimated.toLocaleString()}</div>
+                      {forecast.actual > 0 && (
+                        <div className="text-white text-sm">Act: ${forecast.actual.toLocaleString()}</div>
+                      )}
+                    </div>
+                    <div className="w-24 bg-gray-700 rounded-full h-2">
+                      <div
+                        className="bg-blue-500 h-2 rounded-full"
+                        style={{ width: `${forecast.actual > 0 ? Math.min((forecast.actual / forecast.estimated) * 100, 100) : 0}%` }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <PieChart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-400">No forecast data available</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -402,32 +330,39 @@ const MuseFuzeFinances: React.FC = () => {
         </h3>
         
         <div className="space-y-4">
-          {transactions.slice(0, 5).map((transaction) => (
-            <div key={transaction.id} className="flex justify-between items-center p-4 bg-gray-700/30 rounded-lg">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
-                  <span className={`px-2 py-1 rounded text-sm font-medium ${getCategoryColor(transaction.category)}`}>
-                    {transaction.category}
-                  </span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
-                    {transaction.status.toUpperCase()}
-                  </span>
+          {transactions.length > 0 ? (
+            transactions.slice(0, 5).map((transaction) => (
+              <div key={transaction.id} className="flex justify-between items-center p-4 bg-gray-700/30 rounded-lg">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <span className={`px-2 py-1 rounded text-sm font-medium ${getCategoryColor(transaction.category)}`}>
+                      {transaction.category}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
+                      {transaction.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <h4 className="text-white font-medium">{transaction.description}</h4>
+                  <p className="text-gray-400 text-sm">{transaction.justification}</p>
+                  <div className="text-xs text-gray-500 mt-1">
+                    By {transaction.responsible_staff} • {new Date(transaction.date).toLocaleDateString()}
+                  </div>
                 </div>
-                <h4 className="text-white font-medium">{transaction.description}</h4>
-                <p className="text-gray-400 text-sm">{transaction.justification}</p>
-                <div className="text-xs text-gray-500 mt-1">
-                  By {transaction.responsible_staff} • {new Date(transaction.date).toLocaleDateString()}
+                <div className="text-right">
+                  <div className={`text-lg font-bold ${
+                    transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className={`text-lg font-bold ${
-                  transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
-                }`}>
-                  {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
-                </div>
-              </div>
+            ))
+          ) : (
+            <div className="text-center py-8">
+              <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-400">No transactions recorded yet</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
 
@@ -483,7 +418,7 @@ const MuseFuzeFinances: React.FC = () => {
                   step="0.01"
                   min="0"
                   value={transactionForm.amount}
-                  onChange={(e) => setTransactionForm({ ...transactionForm, amount: parseFloat(e.target.value) })}
+                  onChange={(e) => setTransactionForm({ ...transactionForm, amount: parseFloat(e.target.value) || 0 })}
                   required
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                   placeholder="0.00"
@@ -573,7 +508,7 @@ const MuseFuzeFinances: React.FC = () => {
                   step="0.01"
                   min="0"
                   value={budgetForm.allocated}
-                  onChange={(e) => setBudgetForm({ ...budgetForm, allocated: parseFloat(e.target.value) })}
+                  onChange={(e) => setBudgetForm({ ...budgetForm, allocated: parseFloat(e.target.value) || 0 })}
                   required
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                   placeholder="0.00"

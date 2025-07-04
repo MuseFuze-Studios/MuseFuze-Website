@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Megaphone, Pin, Calendar, User } from 'lucide-react';
+import { staffAPI } from '../../services/api';
 
 interface Announcement {
   id: number;
@@ -22,13 +23,8 @@ const TeamAnnouncements: React.FC = () => {
 
   const fetchAnnouncements = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/announcements', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAnnouncements(data);
-      }
+      const response = await staffAPI.getAnnouncements();
+      setAnnouncements(response.data);
     } catch (error) {
       console.error('Failed to fetch announcements:', error);
     } finally {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Calendar, User, Monitor, Search, Filter, FileText, Clock } from 'lucide-react';
+import { staffAPI } from '../../services/api';
 
 interface DownloadRecord {
   id: number;
@@ -29,76 +30,10 @@ const DownloadHistory: React.FC = () => {
 
   const fetchDownloads = async () => {
     try {
-      // Mock data for demonstration
-      const mockDownloads: DownloadRecord[] = [
-        {
-          id: 1,
-          username: 'john_doe',
-          role: 'developer',
-          version: 'v0.2.1',
-          title: 'Alpha Build - Combat Update',
-          download_date: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-          ip_address: '192.168.1.100',
-          user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          file_size: 1024 * 1024 * 250, // 250MB
-          download_duration: 45,
-          notes: 'Testing new combat mechanics'
-        },
-        {
-          id: 2,
-          username: 'sarah_wilson',
-          role: 'tester',
-          version: 'v0.2.1',
-          title: 'Alpha Build - Combat Update',
-          download_date: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-          ip_address: '192.168.1.101',
-          user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-          file_size: 1024 * 1024 * 250, // 250MB
-          download_duration: 38,
-          notes: 'Performance testing on Mac'
-        },
-        {
-          id: 3,
-          username: 'mike_johnson',
-          role: 'staff',
-          version: 'v0.2.0',
-          title: 'Alpha Build - Story Mode',
-          download_date: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          ip_address: '192.168.1.102',
-          user_agent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
-          file_size: 1024 * 1024 * 180, // 180MB
-          download_duration: 52,
-          notes: 'Story mode review'
-        },
-        {
-          id: 4,
-          username: 'alice_brown',
-          role: 'developer',
-          version: 'v0.1.9',
-          title: 'Pre-Alpha Build',
-          download_date: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-          ip_address: '192.168.1.103',
-          user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          file_size: 1024 * 1024 * 120, // 120MB
-          download_duration: 28
-        },
-        {
-          id: 5,
-          username: 'david_lee',
-          role: 'tester',
-          version: 'v0.2.1',
-          title: 'Alpha Build - Combat Update',
-          download_date: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-          ip_address: '192.168.1.104',
-          user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-          file_size: 1024 * 1024 * 250, // 250MB
-          download_duration: 41,
-          notes: 'Mobile compatibility testing'
-        }
-      ];
-      setDownloads(mockDownloads);
+      const response = await staffAPI.getDownloadHistory();
+      setDownloads(response.data);
     } catch (error) {
-      console.error('Failed to fetch download history:', error);
+      console.error('Failed to fetch downloads:', error);
     } finally {
       setLoading(false);
     }
@@ -228,7 +163,7 @@ const DownloadHistory: React.FC = () => {
         <div className="bg-gradient-to-br from-green-900/30 to-green-800/30 rounded-xl p-6 border border-green-500/30">
           <div className="flex items-center justify-between mb-4">
             <Clock className="h-8 w-8 text-green-400" />
-            <span className="text-2xl font-bold text-white">{Math.round(averageDownloadTime)}s</span>
+            <span className="text-2xl font-bold text-white">{Math.round(averageDownloadTime || 0)}s</span>
           </div>
           <h3 className="text-green-300 font-medium mb-2">Avg. Download Time</h3>
           <div className="text-sm text-gray-400">Per download</div>
