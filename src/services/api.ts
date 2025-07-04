@@ -61,6 +61,98 @@ let mockData = {
   ]
 };
 
+// Mock data storage (since we don't have database yet)
+let mockData = {
+  announcements: [
+    {
+      id: 1,
+      title: 'Welcome to the Staff Dashboard',
+      content: 'This is your central hub for development collaboration. Use the various tools to report bugs, submit reviews, and coordinate testing sessions.',
+      author_name: 'Admin User',
+      is_sticky: true,
+      target_roles: ['all'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ],
+  bugs: [],
+  builds: [
+    {
+      id: 1,
+      version: '0.1.0',
+      title: 'Alpha Build - Initial Release',
+      description: 'First playable build with basic mechanics',
+      file_size: 1024 * 1024 * 50, // 50MB
+      upload_date: new Date().toISOString(),
+      test_instructions: 'Test basic movement and interaction systems',
+      known_issues: 'Some UI elements may not scale properly on different resolutions',
+      uploaded_by_name: 'Admin User'
+    }
+  ],
+  reviews: [],
+  messages: [],
+  playtestSessions: [],
+  downloadHistory: [],
+  transactions: [],
+  budgets: [],
+  forecasts: [
+    { month: 'January', estimated: 5000, actual: 4800 },
+    { month: 'February', estimated: 5500, actual: 5200 },
+    { month: 'March', estimated: 6000, actual: 0 }
+  ],
+  teamMembers: [
+    { id: 1, username: 'Admin User', role: 'admin' },
+    { id: 2, username: 'Staff Member', role: 'staff' },
+    { id: 3, username: 'Developer', role: 'developer' }
+  ]
+};
+
+// Mock data storage (since we don't have database yet)
+let mockData = {
+  announcements: [
+    {
+      id: 1,
+      title: 'Welcome to the Staff Dashboard',
+      content: 'This is your central hub for development collaboration. Use the various tools to report bugs, submit reviews, and coordinate testing sessions.',
+      author_name: 'Admin User',
+      is_sticky: true,
+      target_roles: ['all'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ],
+  bugs: [],
+  builds: [
+    {
+      id: 1,
+      version: '0.1.0',
+      title: 'Alpha Build - Initial Release',
+      description: 'First playable build with basic mechanics',
+      file_size: 1024 * 1024 * 50, // 50MB
+      upload_date: new Date().toISOString(),
+      test_instructions: 'Test basic movement and interaction systems',
+      known_issues: 'Some UI elements may not scale properly on different resolutions',
+      uploaded_by_name: 'Admin User'
+    }
+  ],
+  reviews: [],
+  messages: [],
+  playtestSessions: [],
+  downloadHistory: [],
+  transactions: [],
+  budgets: [],
+  forecasts: [
+    { month: 'January', estimated: 5000, actual: 4800 },
+    { month: 'February', estimated: 5500, actual: 5200 },
+    { month: 'March', estimated: 6000, actual: 0 }
+  ],
+  teamMembers: [
+    { id: 1, username: 'Admin User', role: 'admin' },
+    { id: 2, username: 'Staff Member', role: 'staff' },
+    { id: 3, username: 'Developer', role: 'developer' }
+  ]
+};
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -300,113 +392,137 @@ app.get('/api/bugs/team-members', (req, res) => {
 });
 
 // Reviews
-app.get('/api/reviews', (req, res) => {
-  res.json(mockData.reviews);
+// Add missing endpoints directly here until routes are created
+
+// Announcements
+app.get('/api/announcements', (req, res) => {
+  res.json(mockData.announcements);
 });
 
-app.post('/api/reviews', (req, res) => {
-  const review = {
-    id: mockData.reviews.length + 1,
+// Bug Reports
+app.get('/api/bugs', (req, res) => {
+  res.json(mockData.bugs);
+});
+
+app.post('/api/bugs', (req, res) => {
+  const bug = {
+    id: mockData.bugs.length + 1,
     ...req.body,
-    reviewer_id: 1,
-    reviewer_name: 'Current User',
+    reported_by: 1,
+    reporter_name: 'Current User',
+    status: 'open',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
-  mockData.reviews.push(review);
-  res.status(201).json(review);
+  mockData.bugs.push(bug);
+  res.status(201).json(bug);
 });
 
-// Builds
-app.get('/api/staff/builds', (req, res) => {
-  res.json(mockData.builds);
+app.get('/api/bugs/team-members', (req, res) => {
+  res.json(mockData.teamMembers);
 });
 
-// Messages
-app.get('/api/staff/messages', (req, res) => {
-  res.json(mockData.messages);
-});
-
-app.post('/api/staff/messages', (req, res) => {
-  const message = {
-    id: mockData.messages.length + 1,
-    ...req.body,
-    author_id: 1,
-    author_name: 'Current User',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+// Reviews
+    lastName: 'User',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isEdited: false
   };
-  mockData.messages.push(message);
   res.status(201).json(message);
 });
 
 // Playtest Sessions
 app.get('/api/playtest/sessions', (req, res) => {
-  res.json(mockData.playtestSessions);
+  res.json([]);
 });
 
 app.post('/api/playtest/sessions', (req, res) => {
   const session = {
-    id: mockData.playtestSessions.length + 1,
+    id: Date.now(),
     ...req.body,
     created_by: 1,
-    creator_name: 'Current User',
+    created_by_name: 'Current User',
+    rsvp_count: 0,
+    status: 'upcoming',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
-  mockData.playtestSessions.push(session);
   res.status(201).json(session);
 });
 
 // Download History
 app.get('/api/builds/downloads', (req, res) => {
-  res.json(mockData.downloadHistory);
+  res.json([]);
 });
 
 // Finance endpoints
-app.get('/api/admin/finance', (req, res) => {
-  res.json({
-    transactions: mockData.transactions,
-    budgets: mockData.budgets,
-    forecasts: mockData.forecasts
-  });
+app.get('/api/admin/finance/transactions', (req, res) => {
+  res.json([]);
 });
 
 app.post('/api/admin/finance/transactions', (req, res) => {
   const transaction = {
-    id: mockData.transactions.length + 1,
+    id: Date.now(),
     ...req.body,
-    created_by: 1,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    responsible_staff: 'Current User',
+    date: new Date().toISOString(),
+    status: 'approved'
   };
-  mockData.transactions.push(transaction);
   res.status(201).json(transaction);
 });
 
-app.get('/api/admin/finance/transactions', (req, res) => {
-  res.json(mockData.transactions);
-});
-
 app.get('/api/admin/finance/budgets', (req, res) => {
-  res.json(mockData.budgets);
+  res.json([]);
 });
 
 app.post('/api/admin/finance/budgets', (req, res) => {
   const budget = {
-    id: mockData.budgets.length + 1,
+    id: Date.now(),
     ...req.body,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    spent: 0,
+    last_updated: new Date().toISOString()
   };
-  mockData.budgets.push(budget);
   res.status(201).json(budget);
 });
 
 app.get('/api/admin/finance/forecasts', (req, res) => {
-  res.json(mockData.forecasts);
+  res.json([
+    { month: 'January', estimated: 5000, actual: 4800 },
+    { month: 'February', estimated: 5500, actual: 5200 },
+    { month: 'March', estimated: 6000, actual: 0 }
+  ]);
+});
+// Add missing endpoints directly here until routes are created
+
+// Announcements
+app.get('/api/announcements', (req, res) => {
+  res.json(mockData.announcements);
 });
 
+// Bug Reports
+app.get('/api/bugs', (req, res) => {
+  res.json(mockData.bugs);
+});
+
+app.post('/api/bugs', (req, res) => {
+  const bug = {
+    id: mockData.bugs.length + 1,
+    ...req.body,
+    reported_by: 1,
+    reporter_name: 'Current User',
+    status: 'open',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  mockData.bugs.push(bug);
+  res.status(201).json(bug);
+});
+
+app.get('/api/bugs/team-members', (req, res) => {
+  res.json(mockData.teamMembers);
+});
+
+// Reviews
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 

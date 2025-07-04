@@ -15,6 +15,98 @@ import legalRoutes from './routes/legal.js';
 import { initDatabase } from './config/database.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
+// Mock data storage (since we don't have database yet)
+let mockData = {
+  announcements: [
+    {
+      id: 1,
+      title: 'Welcome to the Staff Dashboard',
+      content: 'This is your central hub for development collaboration. Use the various tools to report bugs, submit reviews, and coordinate testing sessions.',
+      author_name: 'Admin User',
+      is_sticky: true,
+      target_roles: ['all'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ],
+  bugs: [],
+  builds: [
+    {
+      id: 1,
+      version: '0.1.0',
+      title: 'Alpha Build - Initial Release',
+      description: 'First playable build with basic mechanics',
+      file_size: 1024 * 1024 * 50, // 50MB
+      upload_date: new Date().toISOString(),
+      test_instructions: 'Test basic movement and interaction systems',
+      known_issues: 'Some UI elements may not scale properly on different resolutions',
+      uploaded_by_name: 'Admin User'
+    }
+  ],
+  reviews: [],
+  messages: [],
+  playtestSessions: [],
+  downloadHistory: [],
+  transactions: [],
+  budgets: [],
+  forecasts: [
+    { month: 'January', estimated: 5000, actual: 4800 },
+    { month: 'February', estimated: 5500, actual: 5200 },
+    { month: 'March', estimated: 6000, actual: 0 }
+  ],
+  teamMembers: [
+    { id: 1, username: 'Admin User', role: 'admin' },
+    { id: 2, username: 'Staff Member', role: 'staff' },
+    { id: 3, username: 'Developer', role: 'developer' }
+  ]
+};
+
+// Mock data storage (since we don't have database yet)
+let mockData = {
+  announcements: [
+    {
+      id: 1,
+      title: 'Welcome to the Staff Dashboard',
+      content: 'This is your central hub for development collaboration. Use the various tools to report bugs, submit reviews, and coordinate testing sessions.',
+      author_name: 'Admin User',
+      is_sticky: true,
+      target_roles: ['all'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ],
+  bugs: [],
+  builds: [
+    {
+      id: 1,
+      version: '0.1.0',
+      title: 'Alpha Build - Initial Release',
+      description: 'First playable build with basic mechanics',
+      file_size: 1024 * 1024 * 50, // 50MB
+      upload_date: new Date().toISOString(),
+      test_instructions: 'Test basic movement and interaction systems',
+      known_issues: 'Some UI elements may not scale properly on different resolutions',
+      uploaded_by_name: 'Admin User'
+    }
+  ],
+  reviews: [],
+  messages: [],
+  playtestSessions: [],
+  downloadHistory: [],
+  transactions: [],
+  budgets: [],
+  forecasts: [
+    { month: 'January', estimated: 5000, actual: 4800 },
+    { month: 'February', estimated: 5500, actual: 5200 },
+    { month: 'March', estimated: 6000, actual: 0 }
+  ],
+  teamMembers: [
+    { id: 1, username: 'Admin User', role: 'admin' },
+    { id: 2, username: 'Staff Member', role: 'staff' },
+    { id: 3, username: 'Developer', role: 'developer' }
+  ]
+};
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -223,6 +315,137 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/legal', legalRoutes);
 
+// Add missing endpoints directly here until routes are created
+
+// Announcements
+app.get('/api/announcements', (req, res) => {
+  res.json(mockData.announcements);
+});
+
+// Bug Reports
+app.get('/api/bugs', (req, res) => {
+  res.json(mockData.bugs);
+});
+
+app.post('/api/bugs', (req, res) => {
+  const bug = {
+    id: mockData.bugs.length + 1,
+    ...req.body,
+    reported_by: 1,
+    reporter_name: 'Current User',
+    status: 'open',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  mockData.bugs.push(bug);
+  res.status(201).json(bug);
+});
+
+app.get('/api/bugs/team-members', (req, res) => {
+  res.json(mockData.teamMembers);
+});
+
+// Reviews
+    lastName: 'User',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isEdited: false
+  };
+  res.status(201).json(message);
+});
+
+// Playtest Sessions
+app.get('/api/playtest/sessions', (req, res) => {
+  res.json([]);
+});
+
+app.post('/api/playtest/sessions', (req, res) => {
+  const session = {
+    id: Date.now(),
+    ...req.body,
+    created_by: 1,
+    created_by_name: 'Current User',
+    rsvp_count: 0,
+    status: 'upcoming',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  res.status(201).json(session);
+});
+
+// Download History
+app.get('/api/builds/downloads', (req, res) => {
+  res.json([]);
+});
+
+// Finance endpoints
+app.get('/api/admin/finance/transactions', (req, res) => {
+  res.json([]);
+});
+
+app.post('/api/admin/finance/transactions', (req, res) => {
+  const transaction = {
+    id: Date.now(),
+    ...req.body,
+    responsible_staff: 'Current User',
+    date: new Date().toISOString(),
+    status: 'approved'
+  };
+  res.status(201).json(transaction);
+});
+
+app.get('/api/admin/finance/budgets', (req, res) => {
+  res.json([]);
+});
+
+app.post('/api/admin/finance/budgets', (req, res) => {
+  const budget = {
+    id: Date.now(),
+    ...req.body,
+    spent: 0,
+    last_updated: new Date().toISOString()
+  };
+  res.status(201).json(budget);
+});
+
+app.get('/api/admin/finance/forecasts', (req, res) => {
+  res.json([
+    { month: 'January', estimated: 5000, actual: 4800 },
+    { month: 'February', estimated: 5500, actual: 5200 },
+    { month: 'March', estimated: 6000, actual: 0 }
+  ]);
+});
+// Add missing endpoints directly here until routes are created
+
+// Announcements
+app.get('/api/announcements', (req, res) => {
+  res.json(mockData.announcements);
+});
+
+// Bug Reports
+app.get('/api/bugs', (req, res) => {
+  res.json(mockData.bugs);
+});
+
+app.post('/api/bugs', (req, res) => {
+  const bug = {
+    id: mockData.bugs.length + 1,
+    ...req.body,
+    reported_by: 1,
+    reporter_name: 'Current User',
+    status: 'open',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  mockData.bugs.push(bug);
+  res.status(201).json(bug);
+});
+
+app.get('/api/bugs/team-members', (req, res) => {
+  res.json(mockData.teamMembers);
+});
+
+// Reviews
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
