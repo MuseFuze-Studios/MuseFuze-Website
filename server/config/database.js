@@ -274,7 +274,7 @@ async function createTables() {
       )
     `);
 
-    // Insert default admin user if not exists
+    // Insert ONLY the default admin user if not exists
     await pool.execute(`
       INSERT IGNORE INTO users (email, password, firstName, lastName, role, cookiesAccepted, isActive)
       VALUES (
@@ -286,45 +286,6 @@ async function createTables() {
         TRUE,
         TRUE
       )
-    `);
-
-    // Insert default announcement
-    await pool.execute(`
-      INSERT IGNORE INTO team_announcements (id, title, content, author_id, is_sticky, target_roles)
-      VALUES (
-        1,
-        'Welcome to the Staff Dashboard',
-        'This is your central hub for development collaboration. Use the various tools to report bugs, submit reviews, and coordinate testing sessions.',
-        1,
-        TRUE,
-        '["all"]'
-      )
-    `);
-
-    // Insert sample game build
-    await pool.execute(`
-      INSERT IGNORE INTO game_builds (id, name, version, description, file_size, uploaded_by, test_instructions, known_issues)
-      VALUES (
-        1,
-        'Alpha Build - Initial Release',
-        '0.1.0',
-        'First playable build with basic mechanics',
-        52428800,
-        1,
-        'Test basic movement and interaction systems',
-        'Some UI elements may not scale properly on different resolutions'
-      )
-    `);
-
-    // Insert sample forecast data
-    await pool.execute(`
-      INSERT IGNORE INTO finance_forecasts (month, estimated, actual, fiscal_year) VALUES
-      ('January', 5000.00, 4800.00, 2025),
-      ('February', 5500.00, 5200.00, 2025),
-      ('March', 6000.00, 0.00, 2025),
-      ('April', 6500.00, 0.00, 2025),
-      ('May', 7000.00, 0.00, 2025),
-      ('June', 7500.00, 0.00, 2025)
     `);
 
     console.log('✅ Database tables created successfully');
