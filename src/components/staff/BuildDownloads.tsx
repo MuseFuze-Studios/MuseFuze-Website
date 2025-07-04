@@ -23,7 +23,7 @@ const BuildDownloads: React.FC = () => {
     fetchBuilds();
   }, []);
 
-  const fetchBuilds = async () => {
+    const fetchBuilds = async () => {
     try {
       const response = await fetch('/api/staff/builds', {
         credentials: 'include'
@@ -35,9 +35,6 @@ const BuildDownloads: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to fetch builds:', error);
-    } finally {
-      setLoading(false);
-    }
     } finally {
       setLoading(false);
     }

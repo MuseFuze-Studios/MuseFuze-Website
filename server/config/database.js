@@ -275,20 +275,6 @@ async function createTables() {
       )
     `);
 
-    // Insert ONLY the default admin user if not exists
-    await pool.execute(`
-      INSERT IGNORE INTO users (email, password, firstName, lastName, role, cookiesAccepted, isActive)
-      VALUES (
-        'admin@musefuze.com',
-        '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6hsxq/3/HK',
-        'Admin',
-        'User',
-        'admin',
-        TRUE,
-        TRUE
-      )
-    `);
-
     // Insert default announcement
     await pool.execute(`
       INSERT IGNORE INTO team_announcements (id, title, content, author_id, is_sticky, target_roles)
