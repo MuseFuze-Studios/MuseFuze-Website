@@ -325,3 +325,5 @@ async function createTables() {
     throw error;
   }
 }
+
+export { pool }
