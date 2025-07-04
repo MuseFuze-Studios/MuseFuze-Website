@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, AlertCircle, Clock, CheckCircle, User, Search, Filter, MessageCircle, Calendar } from 'lucide-react';
+import { Plus, Edit, Trash2, Reply, ChevronUp, ChevronDown, AlertCircle, Clock, CheckCircle, User, Search, Calendar } from 'lucide-react';
 import { staffAPI } from '../../services/api';
 
 interface BugReport {
@@ -46,11 +46,11 @@ const BugReports: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    priority: 'medium' as const,
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'critical',
     build_id: '',
     tags: '',
     assigned_to: '',
-    status: 'open' as const
+    status: 'open' as 'open' | 'in_progress' | 'fixed' | 'closed'
   });
 
   useEffect(() => {
@@ -101,11 +101,11 @@ const BugReports: React.FC = () => {
       setFormData({ 
         title: '', 
         description: '', 
-        priority: 'medium', 
+        priority: 'medium' as 'low' | 'medium' | 'high' | 'critical', 
         build_id: '', 
         tags: '', 
         assigned_to: '', 
-        status: 'open' 
+        status: 'open' as 'open' | 'in_progress' | 'fixed' | 'closed'
       });
     } catch (error) {
       console.error('Failed to save bug:', error);
@@ -285,7 +285,7 @@ const BugReports: React.FC = () => {
                   </label>
                   <select
                     value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as BugReport['priority'] })}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'low' | 'medium' | 'high' | 'critical' })}
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                   >
                     <option value="low">Low</option>
@@ -302,7 +302,7 @@ const BugReports: React.FC = () => {
                     </label>
                     <select
                       value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as BugReport['status'] })}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as 'open' | 'in_progress' | 'fixed' | 'closed' })}
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                     >
                       <option value="open">Open</option>
@@ -374,11 +374,11 @@ const BugReports: React.FC = () => {
                     setFormData({ 
                       title: '', 
                       description: '', 
-                      priority: 'medium', 
+                      priority: 'medium' as 'low' | 'medium' | 'high' | 'critical', 
                       build_id: '', 
                       tags: '', 
                       assigned_to: '', 
-                      status: 'open' 
+                      status: 'open' as 'open' | 'in_progress' | 'fixed' | 'closed'
                     });
                   }}
                   className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"

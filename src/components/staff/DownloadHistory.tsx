@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Calendar, User, Monitor, Search, Filter, FileText, Clock } from 'lucide-react';
+import { Download, Calendar, User, Search, FileText, Clock } from 'lucide-react';
 import { staffAPI } from '../../services/api';
 
 interface DownloadRecord {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, PieChart, Plus, Calendar, Receipt, AlertTriangle, Target, CreditCard } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, PieChart, Plus, Receipt, Target } from 'lucide-react';
 import { staffAPI } from '../../services/api';
 
 interface Transaction {
@@ -38,7 +38,7 @@ const MuseFuzeFinances: React.FC = () => {
   const [showBudgetForm, setShowBudgetForm] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   const [transactionForm, setTransactionForm] = useState({
-    type: 'expense' as const,
+    type: 'expense' as 'income' | 'expense',
     category: '',
     amount: 0,
     description: '',
@@ -47,7 +47,7 @@ const MuseFuzeFinances: React.FC = () => {
   const [budgetForm, setBudgetForm] = useState({
     category: '',
     allocated: 0,
-    period: 'monthly' as const
+    period: 'monthly' as 'monthly' | 'quarterly' | 'yearly'
   });
 
   useEffect(() => {
@@ -84,7 +84,7 @@ const MuseFuzeFinances: React.FC = () => {
       fetchFinancialData();
       setShowTransactionForm(false);
       setTransactionForm({
-        type: 'expense',
+        type: 'expense' as 'income' | 'expense',
         category: '',
         amount: 0,
         description: '',
@@ -106,7 +106,7 @@ const MuseFuzeFinances: React.FC = () => {
       setBudgetForm({
         category: '',
         allocated: 0,
-        period: 'monthly'
+        period: 'monthly' as 'monthly' | 'quarterly' | 'yearly'
       });
     } catch (error) {
       console.error('Failed to create budget:', error);

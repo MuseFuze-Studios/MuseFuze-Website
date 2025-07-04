@@ -48,7 +48,7 @@ export default defineConfig({
           proxy.on('error', (err) => {
             console.log('proxy error', err);
           });
-          proxy.on('proxyReq', (proxyReq, req) => {
+          proxy.on('proxyReq', (_, req) => {
             console.log('Sending Request to the Target:', req.method, req.url);
           });
           proxy.on('proxyRes', (proxyRes, req) => {
@@ -61,7 +61,6 @@ export default defineConfig({
   preview: {
     port: 4173,
     host: true,
-    https: false,
     headers: {
       'X-Frame-Options': 'DENY',
       'X-Content-Type-Options': 'nosniff',
@@ -74,5 +73,4 @@ export default defineConfig({
     __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
   },
   // Environment variables configuration
-  envPrefix: 'VITE_',
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Plus, Edit, Trash2, Search, MessageCircle, Calendar, User } from 'lucide-react';
+import { Star, Plus, Edit, Trash2, Search, Calendar, User } from 'lucide-react';
 import { staffAPI } from '../../services/api';
 
 interface Review {
@@ -156,9 +156,9 @@ const Reviews: React.FC = () => {
   };
 
   const filteredReviews = reviews.filter(review => {
-    const matchesSearch = review.feedback.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (download.notes && download.notes.toLowerCase().includes(searchTerm.toLowerCase()));
                          review.reviewer_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRating = ratingFilter === 'all' || review.rating.toString() === ratingFilter;
+    const matchesRating = ratingFilter === 'all' || download.rating?.toString() === ratingFilter;
     
     return matchesSearch && matchesRating;
   });

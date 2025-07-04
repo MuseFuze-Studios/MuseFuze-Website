@@ -27,10 +27,8 @@ interface RSVP {
 const PlaytestScheduler: React.FC = () => {
   const [sessions, setSessions] = useState<PlaytestSession[]>([]);
   const [rsvps, setRsvps] = useState<{ [key: number]: RSVP }>({});
-  const [builds, setBuilds] = useState<any[]>([]);
+  const [builds, setBuilds] = useState<GameBuild[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [selectedSession, setSelectedSession] = useState<PlaytestSession | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [formData, setFormData] = useState({
