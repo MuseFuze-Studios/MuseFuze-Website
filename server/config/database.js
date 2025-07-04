@@ -222,7 +222,7 @@ async function createTables() {
       )
     `);
 
-    // Finance transactions table (UK-focused) - FIXED COLUMN NAMES
+    // Finance transactions table (UK-focused)
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS finance_transactions (
         id INT AUTO_INCREMENT PRIMARY KEY,

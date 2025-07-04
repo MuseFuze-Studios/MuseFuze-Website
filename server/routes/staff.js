@@ -139,6 +139,42 @@ router.get('/builds', async (req, res) => {
   }
 });
 
+// Build download endpoint
+router.get('/builds/:id/download', async (req, res) => {
+  try {
+    const buildId = req.params.id;
+    
+    // Get build info
+    const [builds] = await pool.execute(`
+      SELECT * FROM game_builds WHERE id = ? AND isActive = TRUE
+    `, [buildId]);
+    
+    if (builds.length === 0) {
+      return res.status(404).json({ error: 'Build not found' });
+    }
+    
+    const build = builds[0];
+    
+    // Log download
+    await pool.execute(`
+      INSERT INTO download_history (build_id, user_id, ip_address, user_agent)
+      VALUES (?, ?, ?, ?)
+    `, [buildId, req.user.id, req.ip, req.get('User-Agent')]);
+    
+    // For now, return a mock file response
+    // In production, you would serve the actual file
+    const mockFileContent = `Mock build file for ${build.name} v${build.version}`;
+    
+    res.setHeader('Content-Disposition', `attachment; filename="${build.version}.zip"`);
+    res.setHeader('Content-Type', 'application/zip');
+    res.send(Buffer.from(mockFileContent));
+    
+  } catch (error) {
+    console.error('Failed to download build:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Reviews
 router.get('/reviews/:buildId', async (req, res) => {
   try {
