@@ -26,7 +26,6 @@ export async function initDatabase() {
 
     // Create tables
     await createTables();
-    await seedInitialData();
     console.log('✅ Database initialization completed');
   } catch (error) {
     console.error('❌ Database initialization failed:', error.message);
