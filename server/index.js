@@ -360,6 +360,8 @@ app.get('/api/announcements', async (req, res) => {
     console.error('Error fetching announcements:', error);
     res.status(500).json({ error: 'Failed to fetch announcements' });
   }
+}
+)
 // Add missing endpoints directly here until routes are created
 
 // Announcements
@@ -455,6 +457,8 @@ app.get('/api/reviews/build/:buildId', async (req, res) => {
     console.error('Error fetching reviews:', error);
     res.status(500).json({ error: 'Failed to fetch reviews' });
   }
+}
+)
 
 app.post('/api/reviews', async (req, res) => {
   try {
