@@ -70,6 +70,7 @@ const corsOptions = {
       }
     }
   },
+}
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -87,6 +88,10 @@ app.get('/api/health', (req, res) => {
 // CORS test endpoint
 app.get('/api/test-cors', (req, res) => {
   res.json({ 
+  }
+  )
+}
+)
 process.on('SIGINT', () => {
   console.log('SIGINT received, shutting down gracefully');
   process.exit(0);
