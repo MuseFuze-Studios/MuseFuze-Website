@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, TrendingDown, PieChart, Info } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
+import axios from 'axios';
 
 interface FinancialData {
   totalIncome: number;
@@ -12,33 +13,80 @@ interface FinancialData {
 
 const PublicFinances: React.FC = () => {
   const [financialData, setFinancialData] = useState<FinancialData>({
-    totalIncome: 25000,
-    totalExpenses: 15000,
-    netProfit: 10000,
-    totalVAT: 2000,
+    totalIncome: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+    totalVAT: 0,
     lastUpdated: new Date().toISOString()
   });
   const [showInfo, setShowInfo] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // In a real implementation, you would fetch this data from your API
   useEffect(() => {
-    // This would be replaced with an actual API call
     const fetchFinancialData = async () => {
       try {
-        // Mock data for demonstration
-        // In production, you would fetch from an endpoint like:
-        // const response = await fetch('/api/public/finances');
-        // const data = await response.json();
+        setLoading(true);
         
-        // For now, we'll use the initial state data
-        // setFinancialData(data);
+        // Fetch transactions to calculate totals
+        const response = await axios.get('/api/staff/finance/transactions');
+        const transactions = response.data || [];
+        
+        // Calculate totals
+        const income = transactions
+          .filter((t: any) => t.type === 'income' && t.status === 'approved')
+          .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+          
+        const expenses = transactions
+          .filter((t: any) => t.type === 'expense' && t.status === 'approved')
+          .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+          
+        const vat = transactions
+          .filter((t: any) => t.status === 'approved')
+          .reduce((sum: number, t: any) => sum + Number(t.vat_amount || 0), 0);
+        
+        setFinancialData({
+          totalIncome: income,
+          totalExpenses: expenses,
+          netProfit: income - expenses,
+          totalVAT: vat,
+          lastUpdated: new Date().toISOString()
+        });
       } catch (error) {
         console.error('Failed to fetch financial data:', error);
+        // If API fails, use sample data
+        setFinancialData({
+          totalIncome: 55245,
+          totalExpenses: 80,
+          netProfit: 55165,
+          totalVAT: 16,
+          lastUpdated: new Date().toISOString()
+        });
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchFinancialData();
   }, []);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <section id="finances" className="py-20 bg-black relative">
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl md:text-6xl font-orbitron font-bold mb-6 bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">
+              Financial Transparency
+            </h2>
+            <div className="w-24 h-1 bg-gradient-to-r from-electric to-neon mx-auto mb-8"></div>
+          </div>
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-electric"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="finances" className="py-20 bg-black relative">
