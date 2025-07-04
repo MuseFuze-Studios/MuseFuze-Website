@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, TrendingDown, PieChart, Plus, Receipt, Target, FileText, Download, Calculator, AlertTriangle } from 'lucide-react';
 import { staffAPI } from '../../services/api';
+import { formatCurrency } from '../../utils/formatters';
 
 interface Transaction {
   id: number;
@@ -37,6 +38,15 @@ interface Forecast {
   fiscal_year: number;
 }
 
+interface CompanyInfo {
+  id: number;
+  company_name: string;
+  company_number: string;
+  vat_registration: string;
+  utr: string;
+  fiscal_year_end?: string;
+}
+
 interface TaxReport {
   id: number;
   report_type: 'vat' | 'corporation_tax' | 'paye';
@@ -52,32 +62,21 @@ interface TaxReport {
   generated_at: string;
 }
 
-interface CompanyInfo {
-  company_name: string;
-  company_number: string;
-  vat_registration: string;
-  utr: string;
-}
-
 const MuseFuzeFinances: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [forecasts, setForecasts] = useState<Forecast[]>([]);
   const [taxReports, setTaxReports] = useState<TaxReport[]>([]);
-  const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
-    company_name: 'MuseFuze Studios Ltd',
-    company_number: '09876543',
-    vat_registration: 'GB987654321',
-    utr: '1234567890'
-  });
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [showBudgetForm, setShowBudgetForm] = useState(false);
   const [showAddFundsForm, setShowAddFundsForm] = useState(false);
   const [showTaxReportModal, setShowTaxReportModal] = useState(false);
-  const [showCompanyInfoForm, setShowCompanyInfoForm] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
+  const [showCompanyInfoModal, setShowCompanyInfoModal] = useState(false);
   const [selectedTaxReport, setSelectedTaxReport] = useState<TaxReport | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   const [transactionForm, setTransactionForm] = useState({
     type: 'expense' as 'income' | 'expense',
@@ -103,10 +102,11 @@ const MuseFuzeFinances: React.FC = () => {
   });
 
   const [companyInfoForm, setCompanyInfoForm] = useState({
-    company_name: 'MuseFuze Studios Ltd',
-    company_number: '09876543',
-    vat_registration: 'GB987654321',
-    utr: '1234567890'
+    company_name: '',
+    company_number: '',
+    vat_registration: '',
+    utr: '',
+    fiscal_year_end: ''
   });
 
   // UK VAT rates
@@ -162,23 +162,49 @@ const MuseFuzeFinances: React.FC = () => {
 
   useEffect(() => {
     fetchFinancialData();
-    fetchCompanyInfo();
-    fetchTaxDeadlines();
   }, []);
+  
+  // Show success message for 3 seconds then hide it
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const fetchFinancialData = async () => {
     try {
-      const [transactionsRes, budgetsRes, forecastsRes] = await Promise.all([
+      const [transactionsRes, budgetsRes, forecastsRes, companyInfoRes] = await Promise.all([
         staffAPI.getTransactions(),
         staffAPI.getBudgets(),
-        staffAPI.getForecasts()
+        staffAPI.getForecasts(),
+        staffAPI.getCompanyInfo().catch(() => ({ data: null }))
       ]);
       
       setTransactions(transactionsRes.data || []);
       setBudgets(budgetsRes.data || []);
       setForecasts(forecastsRes.data || []);
+      setCompanyInfo(companyInfoRes.data || {
+        id: 1,
+        company_name: 'MuseFuze Studios Ltd',
+        company_number: '09876543',
+        vat_registration: 'GB987654321',
+        utr: '1234567890'
+      });
     } catch (error) {
       console.error('Failed to fetch financial data:', error);
+      
+      // Set default company info if not found
+      setCompanyInfo({
+        id: 1,
+        company_name: 'MuseFuze Studios Ltd',
+        company_number: '09876543',
+        vat_registration: 'GB987654321',
+        utr: '1234567890'
+      });
       // Set empty arrays as fallback
       setTransactions([]);
       setBudgets([]);
@@ -187,26 +213,39 @@ const MuseFuzeFinances: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const fetchCompanyInfo = async () => {
+  
+  const handleCompanyInfoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     try {
-      const response = await staffAPI.getCompanyInfo();
-      if (response.data) {
-        setCompanyInfo(response.data);
-        setCompanyInfoForm(response.data);
-      }
+      await staffAPI.updateCompanyInfo(companyInfoForm);
+      
+      // Update local state
+      setCompanyInfo({
+        id: companyInfo?.id || 1,
+        company_name: companyInfoForm.company_name,
+        company_number: companyInfoForm.company_number,
+        vat_registration: companyInfoForm.vat_registration,
+        utr: companyInfoForm.utr,
+        fiscal_year_end: companyInfoForm.fiscal_year_end
+      });
+      
+      setShowCompanyInfoModal(false);
+      setSuccessMessage('Company information updated successfully');
+      
     } catch (error) {
-      console.error('Failed to fetch company info:', error);
-      // Use default values if API fails
+      console.error('Failed to update company info:', error);
+      alert('Failed to update company information. Please try again.');
     }
   };
-
-  const fetchTaxDeadlines = async () => {
-    try {
-      const response = await staffAPI.getTaxDeadlines();
-      // Process deadlines if needed
-    } catch (error) {
-      console.error('Failed to fetch tax deadlines:', error);
+  
+  // Handle numeric input to ensure proper formatting
+  const handleNumericInput = (e: React.ChangeEvent<HTMLInputElement>, setter: (value: any) => void, field: string, currentValue: any) => {
+    const value = e.target.value;
+    
+    // Allow only numbers and decimal point
+    if (/^[0-9]*\.?[0-9]*$/.test(value) || value === '') {
+      setter({ ...currentValue, [field]: value });
     }
   };
 
@@ -245,7 +284,7 @@ const MuseFuzeFinances: React.FC = () => {
         hmrc_category: ''
       });
       
-      alert('Transaction created successfully!');
+      setSuccessMessage('Transaction created successfully');
     } catch (error) {
       console.error('Failed to create transaction:', error);
       alert('Failed to create transaction. Please try again.');
@@ -262,6 +301,7 @@ const MuseFuzeFinances: React.FC = () => {
       });
       fetchFinancialData();
       setShowBudgetForm(false);
+      setSuccessMessage('Budget created successfully');
       setBudgetForm({
         category: '',
         allocated: '',
@@ -296,6 +336,8 @@ const MuseFuzeFinances: React.FC = () => {
       console.log('Submitting funds transaction:', transactionData);
       await staffAPI.createTransaction(transactionData);
       
+      setSuccessMessage('Funds added successfully');
+      
       fetchFinancialData();
       setShowAddFundsForm(false);
       setFundsForm({
@@ -304,8 +346,6 @@ const MuseFuzeFinances: React.FC = () => {
         description: '',
         investor_name: ''
       });
-      
-      alert('Funds added successfully!');
     } catch (error) {
       console.error('Failed to add funds:', error);
       alert('Failed to add funds. Please try again.');
@@ -314,15 +354,14 @@ const MuseFuzeFinances: React.FC = () => {
 
   const generateTaxReport = async (reportType: 'vat' | 'corporation_tax') => {
     try {
-      const reportData = {
+      const data = {
         report_type: reportType,
         period_start: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
         period_end: new Date().toISOString().split('T')[0],
-        company_number: companyInfo.company_number,
-        vat_registration: companyInfo.vat_registration
+        company_number: companyInfo?.company_number,
+        vat_registration: companyInfo?.vat_registration
       };
-      
-      const response = await staffAPI.generateTaxReport(reportData);
+      const response = await staffAPI.generateTaxReport(data);
       
       setSelectedTaxReport(response.data || response);
       setShowTaxReportModal(true);
@@ -333,75 +372,91 @@ const MuseFuzeFinances: React.FC = () => {
   };
 
   const downloadTaxReport = (report: TaxReport) => {
-    const reportData = {
-      company: companyInfo.company_name,
-      company_number: companyInfo.company_number,
-      vat_registration: companyInfo.vat_registration,
-      utr: companyInfo.utr,
-      period: `${report.period_start} to ${report.period_end}`,
-      type: report.report_type.toUpperCase(),
-      summary: {
-        total_income: `£${report.total_income.toLocaleString()}`,
-        total_expenses: `£${report.total_expenses.toLocaleString()}`,
-        total_vat: `£${report.total_vat.toLocaleString()}`,
-        net_profit: `£${report.net_profit.toLocaleString()}`
-      },
-      generated_at: new Date(report.generated_at).toLocaleString(),
-      status: report.status
+    // Format date for display
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
     };
-
-    // Format the tax report as a text document
-    const reportText = formatTaxReportText(reportData, report);
     
-    const blob = new Blob([reportText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${report.report_type}_report_${report.period_start}_${report.period_end}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const formatTaxReportText = (reportData: any, report: TaxReport) => {
-    const reportType = report.report_type === 'vat' ? 'VAT' : 'CORPORATION TAX';
-    const today = new Date().toLocaleDateString('en-GB');
+    // Calculate corporation tax
+    const corpTaxRate = 0.19; // 19%
+    const corpTaxDue = Math.max(0, report.net_profit * corpTaxRate);
     
-    return `
+    // Create a professional report format
+    let reportContent = '';
+    
+    if (report.report_type === 'vat') {
+      reportContent = `
 ====================================================
-             ${reportType} REPORT
+                VAT RETURN REPORT
                For HMRC Submission
 ====================================================
 
-Business Name:          ${reportData.company}
-UTR:                    ${reportData.utr}
-Company Number:         ${reportData.company_number}
-VAT Registration No:    ${reportData.vat_registration}
-Accounting Period:      ${new Date(report.period_start).toLocaleDateString('en-GB')} - ${new Date(report.period_end).toLocaleDateString('en-GB')}
-Report Generated On:    ${today}
-
-----------------------------------------------------
-SUMMARY OF FINANCIALS
-----------------------------------------------------
-Total Income:                      £${report.total_income.toLocaleString()}
-Allowable Expenses:               £${report.total_expenses.toLocaleString()}
-Capital Allowances:                £0.00
-----------------------------------------------------
-Taxable Profit:                   £${report.net_profit.toLocaleString()}
-
-Corporation Tax Rate:             19%
-Corporation Tax Due:              £${(report.net_profit * 0.19).toLocaleString()}
+Business Name:          ${companyInfo?.company_name || 'MuseFuze Studios Ltd'}
+VAT Registration No:    ${report.vat_registration || companyInfo?.vat_registration || 'GB987654321'}
+Period:                 ${formatDate(report.period_start)} - ${formatDate(report.period_end)}
+Report Generated On:    ${formatDate(report.generated_at)}
 
 ----------------------------------------------------
 VAT SUMMARY
 ----------------------------------------------------
-Output VAT (Sales VAT):           £${(report.total_income * 0.2 / 6).toLocaleString()}
-Input VAT (On Expenses):          £${(report.total_expenses * 0.2 / 6).toLocaleString()}
+Output VAT (Sales VAT):           £${(report.total_vat * 0.5).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Input VAT (On Expenses):          £${(report.total_vat * 0.5).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 ----------------------------------------------------
-VAT Payable to HMRC:              £${report.total_vat.toLocaleString()}
+VAT Payable to HMRC:              £${report.total_vat.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 
 ----------------------------------------------------
 NOTES:
-- All figures rounded to nearest pound.
+- All figures rounded to nearest penny.
+- Receipts and invoices are retained as supporting evidence.
+- VAT calculated at standard rate of 20% where applicable.
+
+----------------------------------------------------
+DECLARATION:
+I confirm that the above information is accurate and
+complete to the best of my knowledge.
+
+Signature: _______________________
+Date:      _______________________
+
+====================================================`;
+    } else {
+      reportContent = `
+====================================================
+             CORPORATION TAX REPORT
+               For HMRC Submission
+====================================================
+
+Business Name:          ${companyInfo?.company_name || 'MuseFuze Studios Ltd'}
+UTR:                    ${companyInfo?.utr || '1234567890'}
+Company Number:         ${report.company_number || companyInfo?.company_number || '09876543'}
+VAT Registration No:    ${report.vat_registration || companyInfo?.vat_registration || 'GB987654321'}
+Accounting Period:      ${formatDate(report.period_start)} - ${formatDate(report.period_end)}
+Report Generated On:    ${formatDate(report.generated_at)}
+
+----------------------------------------------------
+SUMMARY OF FINANCIALS
+----------------------------------------------------
+Total Income:                      £${report.total_income.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Allowable Expenses:               £${report.total_expenses.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Capital Allowances:                £0.00
+----------------------------------------------------
+Taxable Profit:                   £${report.net_profit.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+
+Corporation Tax Rate:             19%
+Corporation Tax Due:              £${corpTaxDue.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+
+----------------------------------------------------
+VAT SUMMARY
+----------------------------------------------------
+Output VAT (Sales VAT):           £${(report.total_vat * 0.5).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Input VAT (On Expenses):          £${(report.total_vat * 0.5).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+----------------------------------------------------
+VAT Payable to HMRC:              £${report.total_vat.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+
+----------------------------------------------------
+NOTES:
+- All figures rounded to nearest penny.
 - Receipts and invoices are retained as supporting evidence.
 - Capital allowances not claimed this period.
 - VAT calculated assuming 20% rate.
@@ -415,15 +470,16 @@ complete to the best of my knowledge.
 Signature: _______________________
 Date:      _______________________
 
-====================================================
-`;
-  };
+====================================================`;
+    }
 
-  const handleCompanyInfoSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCompanyInfo(companyInfoForm);
-    setShowCompanyInfoForm(false);
-    alert('Company information updated successfully!');
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${report.report_type}_report_${report.period_start}_${report.period_end}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const getStatusColor = (status: string) => {
@@ -455,31 +511,16 @@ Date:      _______________________
   };
 
   // Calculate totals in GBP
-  const totalIncome = transactions.filter(t => t.type === 'income' && t.status === 'approved').reduce((sum, t) => sum + t.amount, 0);
-  const totalExpenses = transactions.filter(t => t.type === 'expense' && t.status === 'approved').reduce((sum, t) => sum + t.amount, 0);
-  const totalVAT = transactions.filter(t => t.status === 'approved').reduce((sum, t) => sum + (t.vat_amount || 0), 0);
+  const totalIncome = transactions.filter(t => t.type === 'income' && t.status === 'approved').reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+  const totalExpenses = transactions.filter(t => t.type === 'expense' && t.status === 'approved').reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+  const totalVAT = transactions.filter(t => t.status === 'approved').reduce((sum, t) => sum + parseFloat((t.vat_amount || 0).toString()), 0);
   const netIncome = totalIncome - totalExpenses;
-  const totalBudgetAllocated = budgets.reduce((sum, b) => sum + b.allocated, 0);
-  const totalBudgetSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
+  const totalBudgetAllocated = budgets.reduce((sum, b) => sum + parseFloat(b.allocated.toString()), 0);
+  const totalBudgetSpent = budgets.reduce((sum, b) => sum + parseFloat(b.spent.toString()), 0);
   
-  // Calculate next tax deadlines
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  
-  // VAT deadlines (quarterly)
-  const vatQuarters = [
-    { end: new Date(currentYear, 2, 31), deadline: new Date(currentYear, 4, 7) }, // Q1: Jan-Mar, due May 7
-    { end: new Date(currentYear, 5, 30), deadline: new Date(currentYear, 7, 7) }, // Q2: Apr-Jun, due Aug 7
-    { end: new Date(currentYear, 8, 30), deadline: new Date(currentYear, 10, 7) }, // Q3: Jul-Sep, due Nov 7
-    { end: new Date(currentYear, 11, 31), deadline: new Date(currentYear + 1, 1, 31) }, // Q4: Oct-Dec, due Jan 31
-  ];
-  
-  // Find next VAT deadline
-  const nextVatDeadline = vatQuarters.find(q => q.deadline > currentDate) || 
-    { end: new Date(currentYear + 1, 2, 31), deadline: new Date(currentYear + 1, 4, 7) };
-  
-  // Corporation tax deadline (12 months after end of financial year)
-  const corpTaxDeadline = new Date(currentYear + 1, 11, 31); // Assuming financial year end is Dec 31
+  // Calculate corporation tax (19%)
+  const corpTaxRate = 0.19;
+  const estimatedCorpTax = Math.max(0, netIncome * corpTaxRate);
 
   if (loading) {
     return (
@@ -496,6 +537,11 @@ Date:      _______________________
           <h2 className="text-2xl font-bold text-white mb-2 flex items-center">
             <DollarSign className="h-6 w-6 mr-2" />
             MuseFuze Finances
+            {successMessage && (
+              <span className="ml-4 px-3 py-1 bg-green-500/20 text-green-400 text-sm rounded-full animate-fade-out">
+                ✓ {successMessage}
+              </span>
+            )}
           </h2>
           <p className="text-gray-400">UK-compliant financial tracking and HMRC reporting</p>
         </div>
@@ -529,7 +575,7 @@ Date:      _______________________
         <div className="bg-gradient-to-br from-green-900/30 to-green-800/30 rounded-xl p-6 border border-green-500/30">
           <div className="flex items-center justify-between mb-4">
             <TrendingUp className="h-8 w-8 text-green-400" />
-            <span className="text-2xl font-bold text-white">£{totalIncome.toLocaleString()}</span>
+            <span className="text-2xl font-bold text-white">£{totalIncome.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
           </div>
           <h3 className="text-green-300 font-medium mb-2">Total Income</h3>
           <div className="text-sm text-gray-400">This period</div>
@@ -538,7 +584,7 @@ Date:      _______________________
         <div className="bg-gradient-to-br from-red-900/30 to-red-800/30 rounded-xl p-6 border border-red-500/30">
           <div className="flex items-center justify-between mb-4">
             <TrendingDown className="h-8 w-8 text-red-400" />
-            <span className="text-2xl font-bold text-white">£{totalExpenses.toLocaleString()}</span>
+            <span className="text-2xl font-bold text-white">£{totalExpenses.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
           </div>
           <h3 className="text-red-300 font-medium mb-2">Total Expenses</h3>
           <div className="text-sm text-gray-400">This period</div>
@@ -551,7 +597,7 @@ Date:      _______________________
         }`}>
           <div className="flex items-center justify-between mb-4">
             <DollarSign className={`h-8 w-8 ${netIncome >= 0 ? 'text-blue-400' : 'text-orange-400'}`} />
-            <span className="text-2xl font-bold text-white">£{netIncome.toLocaleString()}</span>
+            <span className="text-2xl font-bold text-white">£{netIncome.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
           </div>
           <h3 className={`font-medium mb-2 ${netIncome >= 0 ? 'text-blue-300' : 'text-orange-300'}`}>Net Profit</h3>
           <div className="text-sm text-gray-400">Income - Expenses</div>
@@ -560,7 +606,7 @@ Date:      _______________________
         <div className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/30 rounded-xl p-6 border border-yellow-500/30">
           <div className="flex items-center justify-between mb-4">
             <Receipt className="h-8 w-8 text-yellow-400" />
-            <span className="text-2xl font-bold text-white">£{totalVAT.toLocaleString()}</span>
+            <span className="text-2xl font-bold text-white">£{totalVAT.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
           </div>
           <h3 className="text-yellow-300 font-medium mb-2">Total VAT</h3>
           <div className="text-sm text-gray-400">Collected/Paid</div>
@@ -572,7 +618,7 @@ Date:      _______________________
             <span className="text-2xl font-bold text-white">{totalBudgetAllocated > 0 ? Math.round((totalBudgetSpent / totalBudgetAllocated) * 100) : 0}%</span>
           </div>
           <h3 className="text-violet-300 font-medium mb-2">Budget Used</h3>
-          <div className="text-sm text-gray-400">£{totalBudgetSpent.toLocaleString()} / £{totalBudgetAllocated.toLocaleString()}</div>
+          <div className="text-sm text-gray-400">£{totalBudgetSpent.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / £{totalBudgetAllocated.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
         </div>
       </div>
 
@@ -580,15 +626,24 @@ Date:      _______________________
       <div className="mb-8 bg-gray-800/30 rounded-xl p-6 border border-gray-700">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-white flex items-center">
-            <FileText className="h-5 w-5 mr-2 text-amber-400" /> 
-            HMRC Tax Reports & Deadlines
+            <FileText className="h-5 w-5 mr-2 text-amber-400" />
+            HMRC Tax Reports
           </h3>
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 flex-wrap gap-2">
             <button
-              onClick={() => setShowCompanyInfoForm(true)}
-              className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-lg"
+              onClick={() => {
+                setCompanyInfoForm({
+                  company_name: companyInfo?.company_name || 'MuseFuze Studios Ltd',
+                  company_number: companyInfo?.company_number || '09876543',
+                  vat_registration: companyInfo?.vat_registration || 'GB987654321',
+                  utr: companyInfo?.utr || '1234567890',
+                  fiscal_year_end: companyInfo?.fiscal_year_end || ''
+                });
+                setShowCompanyInfoModal(true);
+              }}
+              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm"
             >
-              <span>Company Info</span>
+              Company Info
             </button>
             <button
               onClick={() => generateTaxReport('vat')}
@@ -606,22 +661,32 @@ Date:      _______________________
         </div>
         
         <div className="grid md:grid-cols-3 gap-4">
-          <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-600">
+          <div className="bg-gray-800/30 p-4 rounded-lg border border-gray-600">
             <h4 className="text-white font-medium mb-2">Company Details</h4>
-            <p className="text-gray-300 text-sm">Name: {companyInfo.company_name}</p>
-            <p className="text-gray-300 text-sm">Company No: {companyInfo.company_number}</p>
-            <p className="text-gray-300 text-sm">VAT Reg: {companyInfo.vat_registration}</p>
-            <p className="text-gray-300 text-sm">UTR: {companyInfo.utr}</p>
+            <p className="text-gray-300 text-sm">Name: {companyInfo?.company_name || 'MuseFuze Studios Ltd'}</p>
+            <p className="text-gray-300 text-sm">Company No: {companyInfo?.company_number || '09876543'}</p>
+            <p className="text-gray-300 text-sm">VAT Reg: {companyInfo?.vat_registration || 'GB987654321'}</p>
+            <p className="text-gray-300 text-sm">UTR: {companyInfo?.utr || '1234567890'}</p>
           </div>
+          
           <div className="bg-amber-900/20 p-4 rounded-lg border border-amber-500/30">
             <h4 className="text-amber-300 font-medium mb-2">VAT Quarter</h4>
-            <p className="text-white text-lg font-bold">£{totalVAT.toLocaleString()}</p>
+            <p className="text-white text-lg font-bold">£{totalVAT.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
             <p className="text-gray-400 text-sm">VAT to declare</p>
           </div>
+          
           <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/30">
             <h4 className="text-blue-300 font-medium mb-2">Corporation Tax</h4>
-            <p className="text-white text-lg font-bold">£{Math.max(0, netIncome * 0.19).toLocaleString()}</p>
+            <p className="text-white text-lg font-bold">£{estimatedCorpTax.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
             <p className="text-gray-400 text-sm">Estimated (19%)</p>
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <div className="bg-green-900/20 p-4 rounded-lg border border-green-500/30 w-full">
+            <h4 className="text-green-300 font-medium mb-2">Next Deadline</h4>
+            <p className="text-white text-lg font-bold">31 Jan 2026</p>
+            <p className="text-gray-400 text-sm">VAT Return</p>
           </div>
         </div>
       </div>
@@ -652,11 +717,14 @@ Date:      _______________________
                 return (
                   <div key={budget.id} className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className={`px-2 py-1 rounded text-sm font-medium ${getCategoryColor(budget.category)}`}>
+                      <span className={`px-2 py-1 rounded text-sm font-medium ${getCategoryColor(budget.category)} truncate max-w-[200px]`}>
                         {budget.category}
                       </span>
                       <div className="text-right">
-                        <div className="text-white font-medium">£{budget.spent.toLocaleString()} / £{budget.allocated.toLocaleString()}</div>
+                        <div className="text-white font-medium">
+                          £{budget.spent.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / 
+                          £{budget.allocated.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </div>
                         <div className={`text-sm font-medium ${getBudgetUsageColor(percentage).split(' ')[0]}`}>
                           {percentage.toFixed(1)}%
                         </div>
@@ -699,7 +767,7 @@ Date:      _______________________
                     <div className="text-right">
                       <div className="text-blue-400 text-sm">Est: £{forecast.estimated.toLocaleString()}</div>
                       {forecast.actual > 0 && (
-                        <div className="text-white text-sm">Act: £{Number(forecast.actual || 0).toLocaleString()}</div>
+                        <div className="text-white text-sm">Act: £{forecast.actual.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                       )}
                     </div>
                     <div className="w-24 bg-gray-700 rounded-full h-2">
@@ -756,13 +824,14 @@ Date:      _______________________
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className={`text-lg font-bold ${
+                  <div className={`text-xl font-bold ${
                     transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {transaction.type === 'income' ? '+' : '-'}£{transaction.amount.toLocaleString()}
+                    {transaction.type === 'income' ? '+' : '-'}£{parseFloat(transaction.amount.toString()).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </div>
                   <div className="text-xs text-gray-400">
-                    {transaction.currency || 'GBP'} • {(Number(transaction.vat_rate) || 0)}% VAT
+                    {transaction.currency} • {parseFloat(transaction.vat_rate.toString())}% VAT
+                    {transaction.vat_amount > 0 && ` (£${parseFloat(transaction.vat_amount.toString()).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})})`}
                   </div>
                 </div>
               </div>
@@ -776,8 +845,8 @@ Date:      _______________________
         </div>
       </div>
 
-      {/* Company Info Form Modal */}
-      {showCompanyInfoForm && (
+      {/* Company Info Modal */}
+      {showCompanyInfoModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-2xl p-8 max-w-lg w-full border border-gray-700">
             <h3 className="text-2xl font-bold text-white mb-6">Company Information</h3>
@@ -785,71 +854,71 @@ Date:      _______________________
             <form onSubmit={handleCompanyInfoSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Company Name
+                  Company Name *
                 </label>
                 <input
                   type="text"
                   value={companyInfoForm.company_name}
                   onChange={(e) => setCompanyInfoForm({ ...companyInfoForm, company_name: e.target.value })}
                   required
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  placeholder="e.g., MuseFuze Studios Ltd"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="MuseFuze Studios Ltd"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Company Number
+                  Company Number *
                 </label>
                 <input
                   type="text"
                   value={companyInfoForm.company_number}
                   onChange={(e) => setCompanyInfoForm({ ...companyInfoForm, company_number: e.target.value })}
                   required
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  placeholder="e.g., 09876543"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="09876543"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  VAT Registration Number
+                  VAT Registration Number *
                 </label>
                 <input
                   type="text"
                   value={companyInfoForm.vat_registration}
                   onChange={(e) => setCompanyInfoForm({ ...companyInfoForm, vat_registration: e.target.value })}
                   required
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  placeholder="e.g., GB987654321"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="GB987654321"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Unique Taxpayer Reference (UTR)
+                  UTR (Unique Taxpayer Reference) *
                 </label>
                 <input
                   type="text"
                   value={companyInfoForm.utr}
                   onChange={(e) => setCompanyInfoForm({ ...companyInfoForm, utr: e.target.value })}
                   required
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  placeholder="e.g., 1234567890"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="1234567890"
                 />
               </div>
 
               <div className="flex justify-end space-x-4">
                 <button
                   type="button"
-                  onClick={() => setShowCompanyInfoForm(false)}
+                  onClick={() => setShowCompanyInfoModal(false)}
                   className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-lg transition-all shadow-lg hover:shadow-amber-500/25"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg transition-all shadow-lg hover:shadow-blue-500/25"
                 >
                   Save Information
                 </button>
@@ -870,15 +939,13 @@ Date:      _______________________
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Amount (£) *
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
+                <input 
+                  type="text"
                   value={fundsForm.amount}
-                  onChange={(e) => setFundsForm({ ...fundsForm, amount: e.target.value })}
+                  onChange={(e) => handleNumericInput(e, setFundsForm, 'amount', fundsForm)}
                   required
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="Enter amount"
+                  placeholder="0.00"
                 />
               </div>
 
@@ -995,15 +1062,13 @@ Date:      _______________________
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Amount (£) *
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
+                  <input 
+                    type="text"
                     value={transactionForm.amount}
-                    onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
+                    onChange={(e) => handleNumericInput(e, setTransactionForm, 'amount', transactionForm)}
                     required
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="Enter amount"
+                    placeholder="0.00"
                   />
                 </div>
 
@@ -1011,9 +1076,9 @@ Date:      _______________________
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     VAT Rate *
                   </label>
-                  <select
-                    value={transactionForm.vat_rate}
-                    onChange={(e) => setTransactionForm({ ...transactionForm, vat_rate: parseFloat(e.target.value) })}
+                  <select 
+                    value={transactionForm.vat_rate.toString()}
+                    onChange={(e) => setTransactionForm({ ...transactionForm, vat_rate: parseFloat(e.target.value) || 0 })}
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                   >
                     {vatRates.map((rate) => (
@@ -1069,7 +1134,7 @@ Date:      _______________________
               </div>
 
               {parseFloat(transactionForm.amount) > 0 && transactionForm.vat_rate > 0 && (
-                <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+                <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4 animate-pulse">
                   <div className="flex items-center mb-2">
                     <Calculator className="h-4 w-4 text-yellow-400 mr-2" />
                     <span className="text-yellow-300 font-medium">VAT Calculation</span>
@@ -1130,15 +1195,13 @@ Date:      _______________________
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Allocated Amount (£) *
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
+                <input 
+                  type="text"
                   value={budgetForm.allocated}
-                  onChange={(e) => setBudgetForm({ ...budgetForm, allocated: e.target.value })}
+                  onChange={(e) => handleNumericInput(e, setBudgetForm, 'allocated', budgetForm)}
                   required
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  placeholder="Enter budget amount"
+                  placeholder="0.00"
                 />
               </div>
 
@@ -1185,9 +1248,12 @@ Date:      _______________________
               <div>
                 <h3 className="text-2xl font-bold text-white mb-2">
                   {selectedTaxReport.report_type.toUpperCase()} Report
+                  <span className="ml-2 text-sm px-2 py-1 bg-amber-900/30 text-amber-300 rounded-full">
+                    {selectedTaxReport.status.toUpperCase()}
+                  </span>
                 </h3>
                 <p className="text-gray-400">
-                  {new Date(selectedTaxReport.period_start).toLocaleDateString()} - {new Date(selectedTaxReport.period_end).toLocaleDateString()}
+                  {new Date(selectedTaxReport.period_start).toLocaleDateString('en-GB')} - {new Date(selectedTaxReport.period_end).toLocaleDateString('en-GB')}
                 </p>
               </div>
               <button
@@ -1201,26 +1267,33 @@ Date:      _______________________
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="bg-green-900/20 p-4 rounded-lg border border-green-500/30">
-                  <h4 className="text-green-300 font-medium mb-2">Total Income (YTD)</h4>
-                  <p className="text-white text-2xl font-bold">£{selectedTaxReport.total_income.toLocaleString()}</p>
+                  <h4 className="text-green-300 font-medium mb-2">Total Income</h4>
+                  <p className="text-white text-2xl font-bold">£{selectedTaxReport.total_income.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
                 <div className="bg-red-900/20 p-4 rounded-lg border border-red-500/30">
-                  <h4 className="text-red-300 font-medium mb-2">Total Expenses (YTD)</h4>
-                  <p className="text-white text-2xl font-bold">£{selectedTaxReport.total_expenses.toLocaleString()}</p>
+                  <h4 className="text-red-300 font-medium mb-2">Total Expenses</h4>
+                  <p className="text-white text-2xl font-bold">£{selectedTaxReport.total_expenses.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
                 <div className="bg-yellow-900/20 p-4 rounded-lg border border-yellow-500/30">
                   <h4 className="text-yellow-300 font-medium mb-2">Total VAT</h4>
-                  <p className="text-white text-2xl font-bold">£{selectedTaxReport.total_vat.toLocaleString()}</p>
+                  <p className="text-white text-2xl font-bold">£{selectedTaxReport.total_vat.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
                 <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/30">
-                  <h4 className="text-blue-300 font-medium mb-2">Taxable Profit</h4>
-                  <p className="text-white text-2xl font-bold">£{selectedTaxReport.net_profit.toLocaleString()}</p>
+                  <h4 className="text-blue-300 font-medium mb-2">Net Profit</h4>
+                  <p className="text-white text-2xl font-bold">£{selectedTaxReport.net_profit.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
               </div>
-
-              <div className="bg-indigo-900/20 p-4 rounded-lg border border-indigo-500/30">
-                <h4 className="text-indigo-300 font-medium mb-2">Corporation Tax Due (19%)</h4>
-                <p className="text-white text-2xl font-bold">£{(selectedTaxReport.net_profit * 0.19).toLocaleString()}</p>
+              
+              <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/30">
+                <h4 className="text-blue-300 font-medium mb-2">Corporation Tax Due (19%)</h4>
+                <div className="flex justify-between items-center">
+                  <p className="text-white text-xl font-bold">
+                    £{(selectedTaxReport.net_profit * 0.19).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  </p>
+                  <div className="text-sm text-gray-400">
+                    Based on net profit at 19% rate
+                  </div>
+                </div>
               </div>
 
               <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-600">
@@ -1228,19 +1301,19 @@ Date:      _______________________
                 <div className="grid md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-400">Company Name:</p>
-                    <p className="text-white">{companyInfo.company_name}</p>
+                    <p className="text-white">{companyInfo?.company_name}</p>
                   </div>
                   <div>
                     <p className="text-gray-400">Company Number:</p>
-                    <p className="text-white">{companyInfo.company_number}</p>
+                    <p className="text-white">{companyInfo?.company_number}</p>
                   </div>
                   <div>
                     <p className="text-gray-400">VAT Registration:</p>
-                    <p className="text-white">{companyInfo.vat_registration}</p>
+                    <p className="text-white">{companyInfo?.vat_registration}</p>
                   </div>
                   <div>
                     <p className="text-gray-400">UTR:</p>
-                    <p className="text-white">{companyInfo.utr}</p>
+                    <p className="text-white">{companyInfo?.utr}</p>
                   </div>
                 </div>
               </div>
@@ -1248,7 +1321,7 @@ Date:      _______________________
               <div className="bg-amber-900/20 p-4 rounded-lg border border-amber-500/30">
                 <div className="flex items-center mb-2">
                   <AlertTriangle className="h-4 w-4 text-amber-400 mr-2" />
-                  <span className="text-amber-300 font-medium">HMRC Compliance</span>
+                  <span className="text-amber-300 font-medium">HMRC Compliance Notice</span>
                 </div>
                 <p className="text-gray-300 text-sm">
                   This report is generated for HMRC compliance purposes. Please review all figures before submission.
