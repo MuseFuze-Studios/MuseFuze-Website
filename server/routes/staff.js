@@ -387,7 +387,7 @@ router.get('/finance/transactions', async (req, res) => {
       SELECT ft.*, CONCAT(u.firstName, ' ', u.lastName) as responsible_staff
       FROM finance_transactions ft
       JOIN users u ON ft.responsible_staff_id = u.id
-      ORDER BY ft.date DESC, ft.created_at DESC
+      ORDER BY ft.date DESC
     `);
     res.json(transactions);
   } catch (error) {
@@ -424,7 +424,7 @@ router.get('/finance/budgets', async (req, res) => {
 
     const [budgets] = await pool.execute(`
       SELECT * FROM finance_budgets
-      ORDER BY fiscal_year DESC, category ASC
+      ORDER BY created_at DESC, category ASC
     `);
     res.json(budgets);
   } catch (error) {
@@ -461,13 +461,7 @@ router.get('/finance/forecasts', async (req, res) => {
 
     const [forecasts] = await pool.execute(`
       SELECT * FROM finance_forecasts
-      ORDER BY fiscal_year DESC, 
-               CASE month 
-                 WHEN 'January' THEN 1 WHEN 'February' THEN 2 WHEN 'March' THEN 3
-                 WHEN 'April' THEN 4 WHEN 'May' THEN 5 WHEN 'June' THEN 6
-                 WHEN 'July' THEN 7 WHEN 'August' THEN 8 WHEN 'September' THEN 9
-                 WHEN 'October' THEN 10 WHEN 'November' THEN 11 WHEN 'December' THEN 12
-               END ASC
+      ORDER BY created_at DESC
     `);
     res.json(forecasts);
   } catch (error) {

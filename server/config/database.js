@@ -289,6 +289,19 @@ async function createTables() {
       )
     `);
 
+    // Insert default announcement
+    await pool.execute(`
+      INSERT IGNORE INTO team_announcements (id, title, content, author_id, is_sticky, target_roles)
+      VALUES (
+        1,
+        'Welcome to the Staff Dashboard',
+        'This is your central hub for development collaboration. Use the various tools to report bugs, submit reviews, and coordinate testing sessions.',
+        1,
+        TRUE,
+        '["all"]'
+      )
+    `);
+
     console.log('✅ Database tables created successfully');
   } catch (error) {
     console.error('❌ Error creating tables:', error);
