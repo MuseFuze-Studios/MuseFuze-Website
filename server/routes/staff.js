@@ -612,4 +612,234 @@ router.get('/finance/forecasts', async (req, res) => {
   }
 });
 
+// Company Info
+router.get('/finance/company-info', async (req, res) => {
+  try {
+    if (!['admin', 'ceo'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const [info] = await pool.execute(`
+      SELECT * FROM company_info
+      ORDER BY id DESC
+      LIMIT 1
+    `);
+    
+    if (info.length === 0) {
+      return res.status(404).json({ error: 'Company information not found' });
+    }
+    
+    res.json(info[0]);
+  } catch (error) {
+    console.error('Failed to fetch company info:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.put('/finance/company-info', async (req, res) => {
+  try {
+    if (!['admin', 'ceo'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { company_name, company_number, vat_registration, utr } = req.body;
+    
+    await pool.execute(`
+      UPDATE company_info
+      SET company_name = ?, company_number = ?, vat_registration = ?, utr = ?
+      WHERE id = 1
+    `, [company_name, company_number, vat_registration, utr]);
+
+    res.json({ message: 'Company information updated successfully' });
+  } catch (error) {
+    console.error('Failed to update company info:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Tax Reports
+router.post('/finance/tax-report', async (req, res) => {
+  try {
+    if (!['admin', 'ceo'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { report_type, period_start, period_end, company_number, vat_registration } = req.body;
+    
+    // Calculate totals from transactions
+    const [incomeResult] = await pool.execute(`
+      SELECT SUM(amount) as total
+      FROM finance_transactions
+      WHERE type = 'income' AND status = 'approved'
+      AND date BETWEEN ? AND ?
+    `, [period_start, period_end]);
+    
+    const [expenseResult] = await pool.execute(`
+      SELECT SUM(amount) as total
+      FROM finance_transactions
+      WHERE type = 'expense' AND status = 'approved'
+      AND date BETWEEN ? AND ?
+    `, [period_start, period_end]);
+    
+    const [vatResult] = await pool.execute(`
+      SELECT SUM(vat_amount) as total
+      FROM finance_transactions
+      WHERE status = 'approved'
+      AND date BETWEEN ? AND ?
+    `, [period_start, period_end]);
+    
+    const totalIncome = incomeResult[0].total || 0;
+    const totalExpenses = expenseResult[0].total || 0;
+    const totalVat = vatResult[0].total || 0;
+    const netProfit = totalIncome - totalExpenses;
+    
+    // Insert tax report
+    const [result] = await pool.execute(`
+      INSERT INTO hmrc_tax_reports (
+        report_type, period_start, period_end, 
+        company_number, vat_registration,
+        total_income, total_expenses, total_vat, net_profit, 
+        status
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')
+    `, [
+      report_type, period_start, period_end, 
+      company_number, vat_registration,
+      totalIncome, totalExpenses, totalVat, netProfit
+    ]);
+    
+    // Get the created report
+    const [reports] = await pool.execute(`
+      SELECT * FROM hmrc_tax_reports WHERE id = ?
+    `, [result.insertId]);
+    
+    res.json(reports[0]);
+  } catch (error) {
+    console.error('Failed to generate tax report:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/finance/tax-reports', async (req, res) => {
+  try {
+    if (!['admin', 'ceo'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const [reports] = await pool.execute(`
+      SELECT * FROM hmrc_tax_reports
+      ORDER BY generated_at DESC
+    `);
+    
+    res.json(reports);
+  } catch (error) {
+    console.error('Failed to fetch tax reports:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Tax deadlines
+router.get('/finance/tax-deadlines', async (req, res) => {
+  try {
+    if (!['admin', 'ceo'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Get company info for fiscal year end
+    const [companyInfo] = await pool.execute(`
+      SELECT fiscal_year_end FROM company_info WHERE id = 1
+    `);
+    
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    
+    // Default fiscal year end is December 31
+    const fiscalYearEnd = companyInfo[0]?.fiscal_year_end 
+      ? new Date(companyInfo[0].fiscal_year_end) 
+      : new Date(currentYear, 11, 31);
+    
+    // VAT deadlines (quarterly)
+    const vatQuarters = [
+      { 
+        period: 'Q1', 
+        start: new Date(currentYear, 0, 1), 
+        end: new Date(currentYear, 2, 31), 
+        deadline: new Date(currentYear, 4, 7),
+        description: 'VAT Return (Jan-Mar)'
+      },
+      { 
+        period: 'Q2', 
+        start: new Date(currentYear, 3, 1), 
+        end: new Date(currentYear, 5, 30), 
+        deadline: new Date(currentYear, 7, 7),
+        description: 'VAT Return (Apr-Jun)'
+      },
+      { 
+        period: 'Q3', 
+        start: new Date(currentYear, 6, 1), 
+        end: new Date(currentYear, 8, 30), 
+        deadline: new Date(currentYear, 10, 7),
+        description: 'VAT Return (Jul-Sep)'
+      },
+      { 
+        period: 'Q4', 
+        start: new Date(currentYear, 9, 1), 
+        end: new Date(currentYear, 11, 31), 
+        deadline: new Date(currentYear + 1, 1, 31),
+        description: 'VAT Return (Oct-Dec)'
+      }
+    ];
+    
+    // Corporation tax deadlines
+    const corpTaxFilingDeadline = new Date(fiscalYearEnd);
+    corpTaxFilingDeadline.setFullYear(corpTaxFilingDeadline.getFullYear() + 1);
+    
+    const corpTaxPaymentDeadline = new Date(fiscalYearEnd);
+    corpTaxPaymentDeadline.setMonth(corpTaxPaymentDeadline.getMonth() + 9);
+    
+    // Combine all deadlines
+    const allDeadlines = [
+      ...vatQuarters.map(q => ({
+        type: 'vat',
+        ...q,
+        deadline_date: q.deadline.toISOString().split('T')[0]
+      })),
+      {
+        type: 'corporation_tax_filing',
+        period: 'Annual',
+        start: new Date(fiscalYearEnd.getFullYear() - 1, fiscalYearEnd.getMonth(), fiscalYearEnd.getDate() + 1).toISOString().split('T')[0],
+        end: fiscalYearEnd.toISOString().split('T')[0],
+        deadline: corpTaxFilingDeadline.toISOString().split('T')[0],
+        deadline_date: corpTaxFilingDeadline.toISOString().split('T')[0],
+        description: 'Corporation Tax Return Filing'
+      },
+      {
+        type: 'corporation_tax_payment',
+        period: 'Annual',
+        start: new Date(fiscalYearEnd.getFullYear() - 1, fiscalYearEnd.getMonth(), fiscalYearEnd.getDate() + 1).toISOString().split('T')[0],
+        end: fiscalYearEnd.toISOString().split('T')[0],
+        deadline: corpTaxPaymentDeadline.toISOString().split('T')[0],
+        deadline_date: corpTaxPaymentDeadline.toISOString().split('T')[0],
+        description: 'Corporation Tax Payment'
+      }
+    ];
+    
+    // Sort by deadline
+    allDeadlines.sort((a, b) => new Date(a.deadline_date).getTime() - new Date(b.deadline_date).getTime());
+    
+    // Filter to only show future deadlines and recent past deadlines (within 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const relevantDeadlines = allDeadlines.filter(d => 
+      new Date(d.deadline_date) > thirtyDaysAgo
+    );
+    
+    res.json(relevantDeadlines);
+  } catch (error) {
+    console.error('Failed to fetch tax deadlines:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

@@ -374,17 +374,25 @@ app.get('/api/staff/finance/forecasts', (req, res) => {
 app.post('/api/staff/finance/tax-report', (req, res) => {
   console.log('Generating tax report:', req.body);
   
-  const { report_type, period_start, period_end } = req.body;
+  const { report_type, period_start, period_end, company_number, vat_registration } = req.body;
+  
+  // Calculate tax values based on mock data
+  const totalIncome = 25000;
+  const totalExpenses = 15000;
+  const totalVat = 2000;
+  const netProfit = totalIncome - totalExpenses;
   
   const mockReport = {
     id: Date.now(),
     report_type,
     period_start,
     period_end,
-    total_income: 25000,
-    total_expenses: 15000,
-    total_vat: 2000,
-    net_profit: 10000,
+    company_number,
+    vat_registration,
+    total_income: totalIncome,
+    total_expenses: totalExpenses,
+    total_vat: totalVat,
+    net_profit: netProfit,
     status: 'draft',
     generated_at: new Date().toISOString()
   };

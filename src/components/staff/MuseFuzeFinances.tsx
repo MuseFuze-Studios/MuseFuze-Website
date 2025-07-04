@@ -46,8 +46,17 @@ interface TaxReport {
   total_expenses: number;
   total_vat: number;
   net_profit: number;
+  company_number?: string;
+  vat_registration?: string;
   status: 'draft' | 'submitted' | 'accepted' | 'rejected';
   generated_at: string;
+}
+
+interface CompanyInfo {
+  company_name: string;
+  company_number: string;
+  vat_registration: string;
+  utr: string;
 }
 
 const MuseFuzeFinances: React.FC = () => {
@@ -55,11 +64,18 @@ const MuseFuzeFinances: React.FC = () => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [forecasts, setForecasts] = useState<Forecast[]>([]);
   const [taxReports, setTaxReports] = useState<TaxReport[]>([]);
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
+    company_name: 'MuseFuze Studios Ltd',
+    company_number: '09876543',
+    vat_registration: 'GB987654321',
+    utr: '1234567890'
+  });
   const [loading, setLoading] = useState(true);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [showBudgetForm, setShowBudgetForm] = useState(false);
   const [showAddFundsForm, setShowAddFundsForm] = useState(false);
   const [showTaxReportModal, setShowTaxReportModal] = useState(false);
+  const [showCompanyInfoForm, setShowCompanyInfoForm] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   const [selectedTaxReport, setSelectedTaxReport] = useState<TaxReport | null>(null);
   
@@ -84,6 +100,13 @@ const MuseFuzeFinances: React.FC = () => {
     source: '',
     description: '',
     investor_name: ''
+  });
+
+  const [companyInfoForm, setCompanyInfoForm] = useState({
+    company_name: 'MuseFuze Studios Ltd',
+    company_number: '09876543',
+    vat_registration: 'GB987654321',
+    utr: '1234567890'
   });
 
   // UK VAT rates
@@ -139,6 +162,8 @@ const MuseFuzeFinances: React.FC = () => {
 
   useEffect(() => {
     fetchFinancialData();
+    fetchCompanyInfo();
+    fetchTaxDeadlines();
   }, []);
 
   const fetchFinancialData = async () => {
@@ -160,6 +185,28 @@ const MuseFuzeFinances: React.FC = () => {
       setForecasts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCompanyInfo = async () => {
+    try {
+      const response = await staffAPI.getCompanyInfo();
+      if (response.data) {
+        setCompanyInfo(response.data);
+        setCompanyInfoForm(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch company info:', error);
+      // Use default values if API fails
+    }
+  };
+
+  const fetchTaxDeadlines = async () => {
+    try {
+      const response = await staffAPI.getTaxDeadlines();
+      // Process deadlines if needed
+    } catch (error) {
+      console.error('Failed to fetch tax deadlines:', error);
     }
   };
 
@@ -270,7 +317,9 @@ const MuseFuzeFinances: React.FC = () => {
       const reportData = {
         report_type: reportType,
         period_start: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
-        period_end: new Date().toISOString().split('T')[0]
+        period_end: new Date().toISOString().split('T')[0],
+        company_number: companyInfo.company_number,
+        vat_registration: companyInfo.vat_registration
       };
       
       const response = await staffAPI.generateTaxReport(reportData);
@@ -285,7 +334,10 @@ const MuseFuzeFinances: React.FC = () => {
 
   const downloadTaxReport = (report: TaxReport) => {
     const reportData = {
-      company: 'MuseFuze Studios',
+      company: companyInfo.company_name,
+      company_number: companyInfo.company_number,
+      vat_registration: companyInfo.vat_registration,
+      utr: companyInfo.utr,
       period: `${report.period_start} to ${report.period_end}`,
       type: report.report_type.toUpperCase(),
       summary: {
@@ -298,13 +350,80 @@ const MuseFuzeFinances: React.FC = () => {
       status: report.status
     };
 
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+    // Format the tax report as a text document
+    const reportText = formatTaxReportText(reportData, report);
+    
+    const blob = new Blob([reportText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${report.report_type}_report_${report.period_start}_${report.period_end}.json`;
+    a.download = `${report.report_type}_report_${report.period_start}_${report.period_end}.txt`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const formatTaxReportText = (reportData: any, report: TaxReport) => {
+    const reportType = report.report_type === 'vat' ? 'VAT' : 'CORPORATION TAX';
+    const today = new Date().toLocaleDateString('en-GB');
+    
+    return `
+====================================================
+             ${reportType} REPORT
+               For HMRC Submission
+====================================================
+
+Business Name:          ${reportData.company}
+UTR:                    ${reportData.utr}
+Company Number:         ${reportData.company_number}
+VAT Registration No:    ${reportData.vat_registration}
+Accounting Period:      ${new Date(report.period_start).toLocaleDateString('en-GB')} - ${new Date(report.period_end).toLocaleDateString('en-GB')}
+Report Generated On:    ${today}
+
+----------------------------------------------------
+SUMMARY OF FINANCIALS
+----------------------------------------------------
+Total Income:                      £${report.total_income.toLocaleString()}
+Allowable Expenses:               £${report.total_expenses.toLocaleString()}
+Capital Allowances:                £0.00
+----------------------------------------------------
+Taxable Profit:                   £${report.net_profit.toLocaleString()}
+
+Corporation Tax Rate:             19%
+Corporation Tax Due:              £${(report.net_profit * 0.19).toLocaleString()}
+
+----------------------------------------------------
+VAT SUMMARY
+----------------------------------------------------
+Output VAT (Sales VAT):           £${(report.total_income * 0.2 / 6).toLocaleString()}
+Input VAT (On Expenses):          £${(report.total_expenses * 0.2 / 6).toLocaleString()}
+----------------------------------------------------
+VAT Payable to HMRC:              £${report.total_vat.toLocaleString()}
+
+----------------------------------------------------
+NOTES:
+- All figures rounded to nearest pound.
+- Receipts and invoices are retained as supporting evidence.
+- Capital allowances not claimed this period.
+- VAT calculated assuming 20% rate.
+- Profit is before salary or dividends.
+
+----------------------------------------------------
+DECLARATION:
+I confirm that the above information is accurate and
+complete to the best of my knowledge.
+
+Signature: _______________________
+Date:      _______________________
+
+====================================================
+`;
+  };
+
+  const handleCompanyInfoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCompanyInfo(companyInfoForm);
+    setShowCompanyInfoForm(false);
+    alert('Company information updated successfully!');
   };
 
   const getStatusColor = (status: string) => {
@@ -342,6 +461,25 @@ const MuseFuzeFinances: React.FC = () => {
   const netIncome = totalIncome - totalExpenses;
   const totalBudgetAllocated = budgets.reduce((sum, b) => sum + b.allocated, 0);
   const totalBudgetSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
+  
+  // Calculate next tax deadlines
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  
+  // VAT deadlines (quarterly)
+  const vatQuarters = [
+    { end: new Date(currentYear, 2, 31), deadline: new Date(currentYear, 4, 7) }, // Q1: Jan-Mar, due May 7
+    { end: new Date(currentYear, 5, 30), deadline: new Date(currentYear, 7, 7) }, // Q2: Apr-Jun, due Aug 7
+    { end: new Date(currentYear, 8, 30), deadline: new Date(currentYear, 10, 7) }, // Q3: Jul-Sep, due Nov 7
+    { end: new Date(currentYear, 11, 31), deadline: new Date(currentYear + 1, 1, 31) }, // Q4: Oct-Dec, due Jan 31
+  ];
+  
+  // Find next VAT deadline
+  const nextVatDeadline = vatQuarters.find(q => q.deadline > currentDate) || 
+    { end: new Date(currentYear + 1, 2, 31), deadline: new Date(currentYear + 1, 4, 7) };
+  
+  // Corporation tax deadline (12 months after end of financial year)
+  const corpTaxDeadline = new Date(currentYear + 1, 11, 31); // Assuming financial year end is Dec 31
 
   if (loading) {
     return (
@@ -442,10 +580,16 @@ const MuseFuzeFinances: React.FC = () => {
       <div className="mb-8 bg-gray-800/30 rounded-xl p-6 border border-gray-700">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-white flex items-center">
-            <FileText className="h-5 w-5 mr-2 text-amber-400" />
-            HMRC Tax Reports
+            <FileText className="h-5 w-5 mr-2 text-amber-400" /> 
+            HMRC Tax Reports & Deadlines
           </h3>
           <div className="flex space-x-2">
+            <button
+              onClick={() => setShowCompanyInfoForm(true)}
+              className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-lg"
+            >
+              <span>Company Info</span>
+            </button>
             <button
               onClick={() => generateTaxReport('vat')}
               className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm"
@@ -462,6 +606,13 @@ const MuseFuzeFinances: React.FC = () => {
         </div>
         
         <div className="grid md:grid-cols-3 gap-4">
+          <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-600">
+            <h4 className="text-white font-medium mb-2">Company Details</h4>
+            <p className="text-gray-300 text-sm">Name: {companyInfo.company_name}</p>
+            <p className="text-gray-300 text-sm">Company No: {companyInfo.company_number}</p>
+            <p className="text-gray-300 text-sm">VAT Reg: {companyInfo.vat_registration}</p>
+            <p className="text-gray-300 text-sm">UTR: {companyInfo.utr}</p>
+          </div>
           <div className="bg-amber-900/20 p-4 rounded-lg border border-amber-500/30">
             <h4 className="text-amber-300 font-medium mb-2">VAT Quarter</h4>
             <p className="text-white text-lg font-bold">£{totalVAT.toLocaleString()}</p>
@@ -471,11 +622,6 @@ const MuseFuzeFinances: React.FC = () => {
             <h4 className="text-blue-300 font-medium mb-2">Corporation Tax</h4>
             <p className="text-white text-lg font-bold">£{Math.max(0, netIncome * 0.19).toLocaleString()}</p>
             <p className="text-gray-400 text-sm">Estimated (19%)</p>
-          </div>
-          <div className="bg-green-900/20 p-4 rounded-lg border border-green-500/30">
-            <h4 className="text-green-300 font-medium mb-2">Next Deadline</h4>
-            <p className="text-white text-lg font-bold">31 Jan</p>
-            <p className="text-gray-400 text-sm">VAT Return</p>
           </div>
         </div>
       </div>
@@ -629,6 +775,89 @@ const MuseFuzeFinances: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Company Info Form Modal */}
+      {showCompanyInfoForm && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl p-8 max-w-lg w-full border border-gray-700">
+            <h3 className="text-2xl font-bold text-white mb-6">Company Information</h3>
+            
+            <form onSubmit={handleCompanyInfoSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  value={companyInfoForm.company_name}
+                  onChange={(e) => setCompanyInfoForm({ ...companyInfoForm, company_name: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="e.g., MuseFuze Studios Ltd"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Company Number
+                </label>
+                <input
+                  type="text"
+                  value={companyInfoForm.company_number}
+                  onChange={(e) => setCompanyInfoForm({ ...companyInfoForm, company_number: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="e.g., 09876543"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  VAT Registration Number
+                </label>
+                <input
+                  type="text"
+                  value={companyInfoForm.vat_registration}
+                  onChange={(e) => setCompanyInfoForm({ ...companyInfoForm, vat_registration: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="e.g., GB987654321"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Unique Taxpayer Reference (UTR)
+                </label>
+                <input
+                  type="text"
+                  value={companyInfoForm.utr}
+                  onChange={(e) => setCompanyInfoForm({ ...companyInfoForm, utr: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="e.g., 1234567890"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCompanyInfoForm(false)}
+                  className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-lg transition-all shadow-lg hover:shadow-amber-500/25"
+                >
+                  Save Information
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add Funds Modal */}
       {showAddFundsForm && (
@@ -972,11 +1201,11 @@ const MuseFuzeFinances: React.FC = () => {
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="bg-green-900/20 p-4 rounded-lg border border-green-500/30">
-                  <h4 className="text-green-300 font-medium mb-2">Total Income</h4>
+                  <h4 className="text-green-300 font-medium mb-2">Total Income (YTD)</h4>
                   <p className="text-white text-2xl font-bold">£{selectedTaxReport.total_income.toLocaleString()}</p>
                 </div>
                 <div className="bg-red-900/20 p-4 rounded-lg border border-red-500/30">
-                  <h4 className="text-red-300 font-medium mb-2">Total Expenses</h4>
+                  <h4 className="text-red-300 font-medium mb-2">Total Expenses (YTD)</h4>
                   <p className="text-white text-2xl font-bold">£{selectedTaxReport.total_expenses.toLocaleString()}</p>
                 </div>
                 <div className="bg-yellow-900/20 p-4 rounded-lg border border-yellow-500/30">
@@ -984,8 +1213,35 @@ const MuseFuzeFinances: React.FC = () => {
                   <p className="text-white text-2xl font-bold">£{selectedTaxReport.total_vat.toLocaleString()}</p>
                 </div>
                 <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/30">
-                  <h4 className="text-blue-300 font-medium mb-2">Net Profit</h4>
+                  <h4 className="text-blue-300 font-medium mb-2">Taxable Profit</h4>
                   <p className="text-white text-2xl font-bold">£{selectedTaxReport.net_profit.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="bg-indigo-900/20 p-4 rounded-lg border border-indigo-500/30">
+                <h4 className="text-indigo-300 font-medium mb-2">Corporation Tax Due (19%)</h4>
+                <p className="text-white text-2xl font-bold">£{(selectedTaxReport.net_profit * 0.19).toLocaleString()}</p>
+              </div>
+
+              <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-600">
+                <h4 className="text-white font-medium mb-2">Company Information</h4>
+                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-400">Company Name:</p>
+                    <p className="text-white">{companyInfo.company_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Company Number:</p>
+                    <p className="text-white">{companyInfo.company_number}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">VAT Registration:</p>
+                    <p className="text-white">{companyInfo.vat_registration}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">UTR:</p>
+                    <p className="text-white">{companyInfo.utr}</p>
+                  </div>
                 </div>
               </div>
 

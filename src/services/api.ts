@@ -125,6 +125,10 @@ export const staffAPI = {
     return api.post('/staff/finance/budgets', data);
   },
   getForecasts: () => api.get('/staff/finance/forecasts'),
+  getCompanyInfo: () => api.get('/staff/finance/company-info'),
+  updateCompanyInfo: (data: any) => api.put('/staff/finance/company-info', data),
+  getTaxReports: () => api.get('/staff/finance/tax-reports'),
+  getTaxDeadlines: () => api.get('/staff/finance/tax-deadlines'),
   generateTaxReport: (data: any) => {
     console.log('Sending tax report data:', data);
     return api.post('/staff/finance/tax-report', data);

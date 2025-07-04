@@ -275,6 +275,50 @@ async function createTables() {
       )
     `);
 
+    // HMRC tax reports table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS hmrc_tax_reports (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        report_type ENUM('vat', 'corporation_tax', 'paye') NOT NULL,
+        period_start DATE NOT NULL,
+        period_end DATE NOT NULL,
+        company_number VARCHAR(20),
+        vat_registration VARCHAR(20),
+        total_income DECIMAL(10, 2) DEFAULT 0.00,
+        total_expenses DECIMAL(10, 2) DEFAULT 0.00,
+        total_vat DECIMAL(10, 2) DEFAULT 0.00,
+        net_profit DECIMAL(10, 2) DEFAULT 0.00,
+        report_data JSON,
+        generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        submitted_at TIMESTAMP NULL,
+        status ENUM('draft', 'submitted', 'accepted', 'rejected') DEFAULT 'draft'
+      )
+    `);
+
+    // Company information table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS company_info (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_name VARCHAR(100) NOT NULL,
+        company_number VARCHAR(20) NOT NULL,
+        vat_registration VARCHAR(20) NOT NULL,
+        utr VARCHAR(20) NOT NULL,
+        address TEXT,
+        phone VARCHAR(20),
+        email VARCHAR(100),
+        website VARCHAR(100),
+        fiscal_year_end DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insert default company info if not exists
+    await pool.execute(`
+      INSERT IGNORE INTO company_info (id, company_name, company_number, vat_registration, utr)
+      VALUES (1, 'MuseFuze Studios Ltd', '09876543', 'GB987654321', '1234567890')
+    `);
+
     // Insert default announcement
     await pool.execute(`
       INSERT IGNORE INTO team_announcements (id, title, content, author_id, is_sticky, target_roles)
