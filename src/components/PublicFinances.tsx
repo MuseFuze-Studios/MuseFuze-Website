@@ -28,22 +28,24 @@ const PublicFinances: React.FC = () => {
         setLoading(true);
         
         // Fetch transactions to calculate totals
-        const response = await axios.get('/api/staff/finance/transactions');
+        const response = await axios.get('/api/staff/finance/transactions-public');
         const transactions = response.data || [];
-        
-        // Calculate totals
+
+        // Calculate total income
         const income = transactions
-          .filter((t: any) => t.type === 'income' && t.status === 'approved')
+          .filter((t: any) => t.type === 'income')
           .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
-          
+
+        // Calculate total expenses
         const expenses = transactions
-          .filter((t: any) => t.type === 'expense' && t.status === 'approved')
+          .filter((t: any) => t.type === 'expense')
           .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
-          
+
+        // Calculate VAT (based on field, or default to 0)
         const vat = transactions
-          .filter((t: any) => t.status === 'approved')
           .reduce((sum: number, t: any) => sum + Number(t.vat_amount || 0), 0);
-        
+
+        // Update state
         setFinancialData({
           totalIncome: income,
           totalExpenses: expenses,
@@ -55,10 +57,10 @@ const PublicFinances: React.FC = () => {
         console.error('Failed to fetch financial data:', error);
         // If API fails, use sample data
         setFinancialData({
-          totalIncome: 55245,
-          totalExpenses: 80,
-          netProfit: 55165,
-          totalVAT: 16,
+          totalIncome: 404,
+          totalExpenses:404,
+          netProfit: 404,
+          totalVAT: 404,
           lastUpdated: new Date().toISOString()
         });
       } finally {

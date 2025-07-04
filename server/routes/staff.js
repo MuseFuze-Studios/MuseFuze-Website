@@ -40,6 +40,29 @@ const upload = multer({
   }
 });
 
+router.get('/finance/transactions-public', async (req, res) => {
+  try {
+    const [transactions] = await pool.execute(`
+      SELECT
+        ft.date,
+        ft.category,
+        ft.type,
+        ft.amount,
+        ft.currency,
+        ft.description
+      FROM finance_transactions ft
+      WHERE ft.status = 'approved'
+      ORDER BY ft.date DESC
+    `);
+
+    res.json(transactions);
+  } catch (error) {
+    console.error('Failed to fetch public transactions:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 // Apply staff authentication to all routes
 router.use(authenticateToken);
 router.use(requireStaff);
