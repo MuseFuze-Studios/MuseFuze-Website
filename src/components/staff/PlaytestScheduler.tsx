@@ -24,6 +24,12 @@ interface RSVP {
   notes: string | null;
 }
 
+interface GameBuild {
+  id: number;
+  version: string;
+  name: string;
+}
+
 const PlaytestScheduler: React.FC = () => {
   const [sessions, setSessions] = useState<PlaytestSession[]>([]);
   const [rsvps, setRsvps] = useState<{ [key: number]: RSVP }>({});
@@ -31,6 +37,8 @@ const PlaytestScheduler: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showForm, setShowForm] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<PlaytestSession | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -97,7 +105,10 @@ const PlaytestScheduler: React.FC = () => {
         build_id: parseInt(formData.build_id),
         scheduled_date: formData.scheduled_date,
         duration_minutes: formData.duration_minutes,
-        max_participants: formData.max_participants
+        max_participants: formData.max_participants,
+        location: formData.location,
+        test_focus: formData.test_focus,
+        requirements: formData.requirements
       };
 
       await staffAPI.createPlaytestSession(data);
@@ -244,7 +255,7 @@ const PlaytestScheduler: React.FC = () => {
                   <option value="">Select a build</option>
                   {builds.map((build) => (
                     <option key={build.id} value={build.id}>
-                      {build.version} - {build.title}
+                      {build.version} - {build.name}
                     </option>
                   ))}
                 </select>
@@ -311,6 +322,85 @@ const PlaytestScheduler: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Session Detail Modal */}
+      {selectedSession && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-700">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-2">{selectedSession.title}</h3>
+                <p className="text-violet-300">{selectedSession.build_version} - {selectedSession.build_title}</p>
+              </div>
+              <button
+                onClick={() => setSelectedSession(null)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {selectedSession.description && (
+                <div>
+                  <h4 className="text-lg font-semibold text-white mb-2">Description</h4>
+                  <p className="text-gray-300">{selectedSession.description}</p>
+                </div>
+              )}
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-lg font-semibold text-white mb-2">Session Details</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Date:</span>
+                      <span className="text-white">{new Date(selectedSession.scheduled_date).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Time:</span>
+                      <span className="text-white">{new Date(selectedSession.scheduled_date).toLocaleTimeString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Duration:</span>
+                      <span className="text-white">{selectedSession.duration_minutes} minutes</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Participants:</span>
+                      <span className="text-white">{selectedSession.rsvp_count}/{selectedSession.max_participants}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-semibold text-white mb-2">Organizer</h4>
+                  <p className="text-gray-300">{selectedSession.created_by_name}</p>
+                </div>
+              </div>
+
+              {selectedSession.location && (
+                <div>
+                  <h4 className="text-lg font-semibold text-white mb-2">Location</h4>
+                  <p className="text-gray-300">{selectedSession.location}</p>
+                </div>
+              )}
+
+              {selectedSession.test_focus && (
+                <div>
+                  <h4 className="text-lg font-semibold text-white mb-2">Test Focus</h4>
+                  <p className="text-gray-300">{selectedSession.test_focus}</p>
+                </div>
+              )}
+
+              {selectedSession.requirements && (
+                <div>
+                  <h4 className="text-lg font-semibold text-white mb-2">Requirements</h4>
+                  <p className="text-gray-300">{selectedSession.requirements}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

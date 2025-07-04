@@ -18,7 +18,7 @@ interface Review {
 interface GameBuild {
   id: number;
   version: string;
-  title: string;
+  name: string;
 }
 
 const Reviews: React.FC = () => {
@@ -156,9 +156,9 @@ const Reviews: React.FC = () => {
   };
 
   const filteredReviews = reviews.filter(review => {
-                         (download.notes && download.notes.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch = review.feedback.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          review.reviewer_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRating = ratingFilter === 'all' || download.rating?.toString() === ratingFilter;
+    const matchesRating = ratingFilter === 'all' || review.rating.toString() === ratingFilter;
     
     return matchesSearch && matchesRating;
   });
@@ -204,7 +204,7 @@ const Reviews: React.FC = () => {
             >
               {builds.map((build) => (
                 <option key={build.id} value={build.id}>
-                  {build.version} - {build.title}
+                  {build.version} - {build.name}
                 </option>
               ))}
             </select>
@@ -284,7 +284,7 @@ const Reviews: React.FC = () => {
                   <option value="">Select a build</option>
                   {builds.map((build) => (
                     <option key={build.id} value={build.id}>
-                      {build.version} - {build.title}
+                      {build.version} - {build.name}
                     </option>
                   ))}
                 </select>
