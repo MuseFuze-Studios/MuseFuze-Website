@@ -255,6 +255,66 @@ app.get('/api/bugs', (req, res) => {
   res.json(mockData.bugs);
 });
 
+// Finance endpoints
+app.get('/api/staff/finance/transactions', (req, res) => {
+  res.json([]);
+});
+
+app.post('/api/staff/finance/transactions', (req, res) => {
+  const transaction = {
+    id: Date.now(),
+    ...req.body,
+    vat_amount: (parseFloat(req.body.amount || 0) * parseFloat(req.body.vat_rate || 0)) / 100,
+    responsible_staff: 'Current User',
+    date: new Date().toISOString(),
+    status: 'approved'
+  };
+  res.status(201).json(transaction);
+});
+
+app.get('/api/staff/finance/budgets', (req, res) => {
+  res.json([]);
+});
+
+app.post('/api/staff/finance/budgets', (req, res) => {
+  const budget = {
+    id: Date.now(),
+    ...req.body,
+    created_at: new Date().toISOString(),
+    status: 'active'
+  };
+  res.status(201).json(budget);
+});
+
+app.get('/api/staff/finance/forecasts', (req, res) => {
+  res.json([
+    { month: 'January', estimated: 5000, actual: 4800 },
+    { month: 'February', estimated: 5500, actual: 5200 },
+    { month: 'March', estimated: 6000, actual: null },
+    { month: 'April', estimated: 6200, actual: null }
+  ]);
+});
+
+// Tax report generation endpoint
+app.post('/api/staff/finance/tax-report', (req, res) => {
+  const { report_type, period_start, period_end } = req.body;
+  
+  const mockReport = {
+    id: Date.now(),
+    report_type,
+    period_start,
+    period_end,
+    total_income: 25000,
+    total_expenses: 15000,
+    total_vat: 2000,
+    net_profit: 10000,
+    status: 'draft',
+    generated_at: new Date().toISOString()
+  };
+  
+  res.json(mockReport);
+});
+
 // In production, serve the React app for all non-API routes
 if (NODE_ENV === 'production') {
   app.get('*', (req, res) => {
