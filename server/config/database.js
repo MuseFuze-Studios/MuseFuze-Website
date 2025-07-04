@@ -61,52 +61,6 @@ let mockData = {
   ]
 };
 
-// Mock data storage (since we don't have database yet)
-let mockData = {
-  announcements: [
-    {
-      id: 1,
-      title: 'Welcome to the Staff Dashboard',
-      content: 'This is your central hub for development collaboration. Use the various tools to report bugs, submit reviews, and coordinate testing sessions.',
-      author_name: 'Admin User',
-      is_sticky: true,
-      target_roles: ['all'],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ],
-  bugs: [],
-  builds: [
-    {
-      id: 1,
-      version: '0.1.0',
-      title: 'Alpha Build - Initial Release',
-      description: 'First playable build with basic mechanics',
-      file_size: 1024 * 1024 * 50, // 50MB
-      upload_date: new Date().toISOString(),
-      test_instructions: 'Test basic movement and interaction systems',
-      known_issues: 'Some UI elements may not scale properly on different resolutions',
-      uploaded_by_name: 'Admin User'
-    }
-  ],
-  reviews: [],
-  messages: [],
-  playtestSessions: [],
-  downloadHistory: [],
-  transactions: [],
-  budgets: [],
-  forecasts: [
-    { month: 'January', estimated: 5000, actual: 4800 },
-    { month: 'February', estimated: 5500, actual: 5200 },
-    { month: 'March', estimated: 6000, actual: 0 }
-  ],
-  teamMembers: [
-    { id: 1, username: 'Admin User', role: 'admin' },
-    { id: 2, username: 'Staff Member', role: 'staff' },
-    { id: 3, username: 'Developer', role: 'developer' }
-  ]
-};
-
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -314,53 +268,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/legal', legalRoutes);
-
-// Add missing endpoints directly here until routes are created
-
-// Announcements
-app.get('/api/announcements', (req, res) => {
-  res.json(mockData.announcements);
-});
-
-// Bug Reports
-app.get('/api/bugs', (req, res) => {
-  res.json(mockData.bugs);
-});
-
-app.post('/api/bugs', (req, res) => {
-  const bug = {
-    id: mockData.bugs.length + 1,
-    ...req.body,
-    reported_by: 1,
-    reporter_name: 'Current User',
-    status: 'open',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
-  mockData.bugs.push(bug);
-  res.status(201).json(bug);
-});
-
-app.get('/api/bugs/team-members', (req, res) => {
-  res.json(mockData.teamMembers);
-});
-
-// Reviews
-      
-      for (let i = 0; i < months.length; i++) {
-        await pool.execute(`
-          INSERT INTO finance_forecasts (month, estimated, actual, year)
-          VALUES (?, ?, ?, ?)
-        `, [months[i], 5000 + (i * 500), i < 2 ? 4800 + (i * 400) : 0, currentYear]);
-      }
-      
-      console.log('✅ Initial data seeded successfully');
-    }
-  } catch (error) {
-    console.error('❌ Error seeding initial data:', error.message);
-    // Don't throw error here, just log it
-  }
-}
 
 // Add missing endpoints directly here until routes are created
 
