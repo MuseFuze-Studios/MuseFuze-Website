@@ -37,10 +37,7 @@ api.interceptors.response.use(
     });
     
     // Handle specific error cases
-    if (error.response?.status === 401) {
-      // Redirect to login on unauthorized
-      window.location.href = '/login';
-    }
+    // Don't automatically redirect on 401 - let the auth context handle it
     
     return Promise.reject(error);
   }

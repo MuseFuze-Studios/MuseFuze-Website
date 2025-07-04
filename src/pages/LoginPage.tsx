@@ -20,7 +20,7 @@ const LoginPage: React.FC = () => {
   const location = useLocation();
 
   // Get the intended destination from location state
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = (location.state as any)?.from?.pathname || '/dashboard';
 
   // Redirect if already logged in
   useEffect(() => {

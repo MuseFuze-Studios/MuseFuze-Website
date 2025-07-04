@@ -16,56 +16,58 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
-  const checkAuth = useCallback(async () => {
-    // Prevent multiple simultaneous auth checks
-    if (authChecked) {
-      setLoading(false);
-      return;
-    }
-
+  const checkAuth = useCallback(async (force = false) => {
+    // Only check auth once unless forced
+    if (initialized && !force) return;
+    
+    setLoading(true);
     try {
       const response = await authAPI.me();
       setUser(response.data.user);
+      console.log('Auth check successful:', response.data.user.email);
     } catch {
       // Silently handle auth failures - user is just not logged in
       setUser(null);
+      console.log('Auth check failed - user not logged in');
     } finally {
       setLoading(false);
-      setAuthChecked(true);
+      if (!initialized) setInitialized(true);
     }
-  }, [authChecked]);
+  }, [initialized]);
 
   const login = async (email: string, password: string) => {
     const response = await authAPI.login({ email, password });
     setUser(response.data.user);
-    setAuthChecked(true);
+    console.log('Login successful:', response.data.user.email);
   };
 
   const register = async (userData: RegisterData) => {
     const response = await authAPI.register(userData);
     setUser(response.data.user);
-    setAuthChecked(true);
+    console.log('Registration successful:', response.data.user.email);
   };
 
   const logout = async () => {
     try {
       await authAPI.logout();
+      console.log('Logout successful');
     } catch {
       // Silently handle logout errors
+      console.log('Logout request failed, but clearing local state');
     } finally {
       setUser(null);
-      setAuthChecked(false);
+      setInitialized(false);
     }
   };
 
   useEffect(() => {
-    // Only check auth once when component mounts
-    if (!authChecked) {
+    // Check auth when component mounts
+    if (!initialized) {
       checkAuth();
     }
-  }, [checkAuth, authChecked]);
+  }, [checkAuth, initialized]);
 
   const value = {
     user,
