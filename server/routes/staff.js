@@ -1,393 +1,292 @@
 import express from 'express';
-import multer from 'multer';
+import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
+import dotenv from 'dotenv';
 import path from 'path';
-import fs from 'fs';
-import { pool } from '../config/database.js';
-import { authenticateToken, requireStaff } from '../middleware/auth.js';
-import { 
-  validateGameBuild, 
-  validateMessagePost, 
-  validateBugReport, 
-  validateReview, 
-  validatePlaytestSession,
-  handleValidationErrors 
-} from '../middleware/validation.js';
+import { fileURLToPath } from 'url';
 
-const router = express.Router();
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import staffRoutes from './routes/staff.js';
+import adminRoutes from './routes/admin.js';
+import legalRoutes from './routes/legal.js';
+import { initDatabase } from './config/database.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
-// File upload configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'uploads/builds';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Initialize database
+await initDatabase();
+
+// Trust proxy for proper IP detection
+app.set('trust proxy', 1);
+
+// CORS configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin && NODE_ENV === 'production') {
+      return callback(null, true);
     }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ['.zip', '.rar', '.7z', '.exe'];
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedTypes.includes(ext)) {
-      cb(null, true);
+    
+    if (!origin && NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:4173',
+      'http://127.0.0.1:4173',
+      'https://musefuzestudios.com',
+      'https://www.musefuzestudios.com',
+      process.env.CLIENT_URL,
+      process.env.FRONTEND_URL,
+      process.env.CORS_ORIGIN,
+    ].filter(Boolean);
+    
+    console.log(`CORS check - Origin: ${origin}, Environment: ${NODE_ENV}`);
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log(`✅ CORS allowed for origin: ${origin}`);
+      callback(null, true);
     } else {
-      cb(new Error('Invalid file type. Only ZIP, RAR, 7Z, and EXE files are allowed.'));
-    }
-  }
-});
-
-// Game Builds Routes
-router.get('/builds', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [builds] = await pool.execute(`
-      SELECT 
-        gb.*,
-        CONCAT(u.firstName, ' ', u.lastName) as uploaded_by_name
-      FROM game_builds gb
-      LEFT JOIN users u ON gb.uploaded_by = u.id
-      WHERE gb.isActive = TRUE
-      ORDER BY gb.upload_date DESC
-    `);
-    
-    res.json({ builds });
-  } catch (error) {
-    console.error('Builds fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-router.post('/builds', authenticateToken, requireStaff, upload.single('buildFile'), validateGameBuild, handleValidationErrors, async (req, res) => {
-  try {
-    const { name, version, description, externalUrl, testInstructions, knownIssues } = req.body;
-    const filePath = req.file ? req.file.path : null;
-    const fileSize = req.file ? req.file.size : 0;
-
-    if (!filePath && !externalUrl) {
-      return res.status(400).json({ error: 'Either a file upload or external URL is required' });
-    }
-
-    const [result] = await pool.execute(`
-      INSERT INTO game_builds (name, version, description, file_path, file_size, external_url, test_instructions, known_issues, uploaded_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [name, version, description, filePath, fileSize, externalUrl, testInstructions, knownIssues, req.user.id]);
-
-    res.status(201).json({ 
-      id: result.insertId,
-      message: 'Build uploaded successfully' 
-    });
-  } catch (error) {
-    console.error('Build upload error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-router.delete('/builds/:id', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const buildId = req.params.id;
-    
-    // Get file path before deletion
-    const [builds] = await pool.execute('SELECT file_path FROM game_builds WHERE id = ?', [buildId]);
-    
-    if (builds.length > 0 && builds[0].file_path) {
-      // Delete file from filesystem
-      try {
-        fs.unlinkSync(builds[0].file_path);
-      } catch (fileError) {
-        console.warn('Could not delete file:', fileError);
+      console.log(`❌ CORS blocked origin: ${origin}`);
+      if (NODE_ENV === 'development') {
+        console.log(`🔧 Development mode: allowing origin anyway`);
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS policy violation: Origin ${origin} not allowed`));
       }
     }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'Pragma',
+    'X-CSRF-Token',
+    'X-Forwarded-For',
+    'X-Real-IP'
+  ],
+  exposedHeaders: ['Set-Cookie', 'X-Total-Count'],
+  maxAge: 86400,
+  optionsSuccessStatus: 200
+};
 
-    await pool.execute('UPDATE game_builds SET isActive = FALSE WHERE id = ?', [buildId]);
-    res.json({ message: 'Build deleted successfully' });
-  } catch (error) {
-    console.error('Build deletion error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', (req, res) => {
+  console.log(`Preflight request from origin: ${req.get('Origin')}`);
+  res.header('Access-Control-Allow-Origin', req.get('Origin') || '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,Cache-Control,Pragma');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(200);
 });
 
-// Message Board Routes
-router.get('/messages', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [posts] = await pool.execute(`
-      SELECT 
-        mp.*,
-        u.firstName,
-        u.lastName,
-        (SELECT COUNT(*) FROM message_posts WHERE parentId = mp.id) as replyCount
-      FROM message_posts mp
-      JOIN users u ON mp.authorId = u.id
-      WHERE mp.parentId IS NULL
-      ORDER BY mp.createdAt DESC
-    `);
-    
-    res.json({ posts });
-  } catch (error) {
-    console.error('Messages fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: NODE_ENV === 'production' ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+      imgSrc: ["'self'", "data:", "https://images.pexels.com", "https://via.placeholder.com"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  } : false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: NODE_ENV === 'production' ? 100 : 1000,
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: 15 * 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === '/api/health'
 });
 
-router.get('/messages/:id/replies', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const postId = req.params.id;
-    const [replies] = await pool.execute(`
-      SELECT 
-        mp.*,
-        u.firstName,
-        u.lastName
-      FROM message_posts mp
-      JOIN users u ON mp.authorId = u.id
-      WHERE mp.parentId = ?
-      ORDER BY mp.createdAt ASC
-    `, [postId]);
-    
-    res.json({ replies });
-  } catch (error) {
-    console.error('Replies fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+const authLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: NODE_ENV === 'production' ? 50 : 500,
+  message: {
+    error: 'Too many authentication attempts, please try again later.',
+    retryAfter: 1 * 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
-router.post('/messages', authenticateToken, requireStaff, validateMessagePost, handleValidationErrors, async (req, res) => {
-  try {
-    const { title, content, parentId } = req.body;
-    
-    const [result] = await pool.execute(`
-      INSERT INTO message_posts (title, content, authorId, parentId)
-      VALUES (?, ?, ?, ?)
-    `, [title, content, req.user.id, parentId || null]);
+app.use(limiter);
 
-    res.status(201).json({ 
-      id: result.insertId,
-      message: 'Message posted successfully' 
-    });
-  } catch (error) {
-    console.error('Message post error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
-router.delete('/messages/:id', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const messageId = req.params.id;
-    
-    // Check if user owns the message or is admin
-    const [messages] = await pool.execute('SELECT authorId FROM message_posts WHERE id = ?', [messageId]);
-    
-    if (messages.length === 0) {
-      return res.status(404).json({ error: 'Message not found' });
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// In production, serve the built frontend
+if (NODE_ENV === 'production') {
+  const publicPath = path.join(__dirname, '..', 'public');
+  app.use(express.static(publicPath));
+  console.log(`📁 Serving static files from: ${publicPath}`);
+}
+
+// Request logging
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  const origin = req.get('Origin') || 'no-origin';
+  
+  if (NODE_ENV === 'development') {
+    console.log(`${timestamp} - ${req.method} ${req.path} - Origin: ${origin}`);
+  } else {
+    if (req.method !== 'GET' || req.path.startsWith('/api/')) {
+      console.log(`${timestamp} - ${req.method} ${req.path} - Origin: ${origin} - IP: ${req.ip}`);
     }
+  }
+  
+  next();
+});
 
-    if (messages[0].authorId !== req.user.id && !['admin', 'ceo'].includes(req.user.role)) {
-      return res.status(403).json({ error: 'Not authorized to delete this message' });
+// Add security headers for all responses
+app.use((req, res, next) => {
+  const origin = req.get('Origin');
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('X-Frame-Options', 'DENY');
+  res.header('X-XSS-Protection', '1; mode=block');
+  
+  next();
+});
+
+// API Routes
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/staff', staffRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/legal', legalRoutes);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: NODE_ENV,
+    cors: 'enabled',
+    version: '1.0.0',
+    uptime: process.uptime(),
+    domain: req.get('Host'),
+    origin: req.get('Origin')
+  });
+});
+
+// CORS test endpoint
+app.get('/api/test-cors', (req, res) => {
+  res.json({ 
+    message: 'CORS test successful',
+    origin: req.get('Origin'),
+    host: req.get('Host'),
+    timestamp: new Date().toISOString(),
+    environment: NODE_ENV,
+    headers: {
+      'access-control-allow-origin': res.get('Access-Control-Allow-Origin'),
+      'access-control-allow-credentials': res.get('Access-Control-Allow-Credentials')
     }
-
-    await pool.execute('DELETE FROM message_posts WHERE id = ? OR parentId = ?', [messageId, messageId]);
-    res.json({ message: 'Message deleted successfully' });
-  } catch (error) {
-    console.error('Message deletion error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  });
 });
 
-// Announcements Route
-router.get('/announcements', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [announcements] = await pool.execute(`
-      SELECT 
-        ta.*,
-        CONCAT(u.firstName, ' ', u.lastName) as author_name
-      FROM team_announcements ta
-      JOIN users u ON ta.author_id = u.id
-      ORDER BY ta.is_sticky DESC, ta.created_at DESC
-    `);
+// In production, serve the React app for all non-API routes
+if (NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({
+        error: 'API route not found',
+        path: req.originalUrl,
+        method: req.method
+      });
+    }
     
-    res.json(announcements);
-  } catch (error) {
-    console.error('Announcements fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Bug Reports Routes
-router.get('/bugs', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [bugs] = await pool.execute(`
-      SELECT 
-        br.*,
-        CONCAT(reporter.firstName, ' ', reporter.lastName) as reporter_name,
-        CONCAT(assignee.firstName, ' ', assignee.lastName) as assignee_name,
-        gb.version as build_version,
-        gb.name as build_title
-      FROM bug_reports br
-      JOIN users reporter ON br.reported_by = reporter.id
-      LEFT JOIN users assignee ON br.assigned_to = assignee.id
-      LEFT JOIN game_builds gb ON br.build_id = gb.id
-      ORDER BY br.created_at DESC
-    `);
-    
-    res.json(bugs);
-  } catch (error) {
-    console.error('Bugs fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-router.post('/bugs', authenticateToken, requireStaff, validateBugReport, handleValidationErrors, async (req, res) => {
-  try {
-    const { title, description, priority, build_id, tags, assigned_to } = req.body;
-    
-    const [result] = await pool.execute(`
-      INSERT INTO bug_reports (title, description, priority, build_id, tags, reported_by, assigned_to)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [title, description, priority, build_id, JSON.stringify(tags || []), req.user.id, assigned_to]);
-
-    res.status(201).json({ 
-      id: result.insertId,
-      message: 'Bug report created successfully' 
+    const indexPath = path.join(__dirname, '..', 'public', 'index.html');
+    res.sendFile(indexPath);
+  });
+} else {
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      error: 'Route not found',
+      path: req.originalUrl,
+      method: req.method
     });
-  } catch (error) {
-    console.error('Bug report creation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  });
+}
+
+// Error handling
+app.use(errorHandler);
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
+
+// Start server
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 MuseFuze Server running on port ${PORT}`);
+  console.log(`🔒 Environment: ${NODE_ENV}`);
+  console.log(`⚡ Rate limiting: ${NODE_ENV === 'production' ? 'STRICT' : 'RELAXED'}`);
+  console.log(`🌐 CORS enabled for ${NODE_ENV} environment`);
+  console.log(`📡 Server accessible at: http://localhost:${PORT}`);
+  console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+  
+  if (NODE_ENV === 'production') {
+    console.log(`🌍 Frontend served from: http://localhost:${PORT}`);
+    console.log(`🔗 API accessible at: http://localhost:${PORT}/api/`);
+  } else {
+    console.log(`🧪 CORS test: http://localhost:${PORT}/api/test-cors`);
   }
 });
 
-router.get('/bugs/team-members', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [members] = await pool.execute(`
-      SELECT 
-        id,
-        CONCAT(firstName, ' ', lastName) as username,
-        role
-      FROM users 
-      WHERE role IN ('dev_tester', 'developer', 'staff', 'admin', 'ceo')
-      AND isActive = TRUE
-      ORDER BY firstName, lastName
-    `);
-    
-    res.json(members);
-  } catch (error) {
-    console.error('Team members fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+// Handle server errors
+server.on('error', (error) => {
+  console.error('Server error:', error);
 });
 
-// Reviews Routes
-router.get('/reviews/build/:buildId', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const buildId = req.params.buildId;
-    const [reviews] = await pool.execute(`
-      SELECT 
-        r.*,
-        CONCAT(u.firstName, ' ', u.lastName) as reviewer_name,
-        gb.version as build_version
-      FROM reviews r
-      JOIN users u ON r.reviewer_id = u.id
-      JOIN game_builds gb ON r.build_id = gb.id
-      WHERE r.build_id = ?
-      ORDER BY r.created_at DESC
-    `, [buildId]);
-    
-    res.json(reviews);
-  } catch (error) {
-    console.error('Reviews fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-router.post('/reviews', authenticateToken, requireStaff, validateReview, handleValidationErrors, async (req, res) => {
-  try {
-    const { build_id, rating, feedback } = req.body;
-    
-    const [result] = await pool.execute(`
-      INSERT INTO reviews (build_id, reviewer_id, rating, feedback)
-      VALUES (?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE rating = VALUES(rating), feedback = VALUES(feedback), updated_at = CURRENT_TIMESTAMP
-    `, [build_id, req.user.id, rating, feedback]);
-
-    res.status(201).json({ 
-      id: result.insertId,
-      message: 'Review submitted successfully' 
-    });
-  } catch (error) {
-    console.error('Review submission error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Playtest Sessions Routes
-router.get('/playtest/sessions', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [sessions] = await pool.execute(`
-      SELECT 
-        ps.*,
-        CONCAT(u.firstName, ' ', u.lastName) as created_by_name,
-        gb.version as build_version,
-        gb.name as build_title,
-        (SELECT COUNT(*) FROM playtest_rsvps WHERE session_id = ps.id AND status = 'attending') as rsvp_count
-      FROM playtest_sessions ps
-      JOIN users u ON ps.created_by = u.id
-      JOIN game_builds gb ON ps.build_id = gb.id
-      ORDER BY ps.scheduled_date ASC
-    `);
-    
-    res.json(sessions);
-  } catch (error) {
-    console.error('Playtest sessions fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-router.post('/playtest/sessions', authenticateToken, requireStaff, validatePlaytestSession, handleValidationErrors, async (req, res) => {
-  try {
-    const { title, description, build_id, scheduled_date, duration_minutes, max_participants, location, test_focus, requirements } = req.body;
-    
-    const [result] = await pool.execute(`
-      INSERT INTO playtest_sessions (title, description, build_id, scheduled_date, duration_minutes, max_participants, location, test_focus, requirements, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [title, description, build_id, scheduled_date, duration_minutes, max_participants, location, test_focus, requirements, req.user.id]);
-
-    res.status(201).json({ 
-      id: result.insertId,
-      message: 'Playtest session created successfully' 
-    });
-  } catch (error) {
-    console.error('Playtest session creation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Download History Route
-router.get('/downloads', authenticateToken, requireStaff, async (req, res) => {
-  try {
-    const [downloads] = await pool.execute(`
-      SELECT 
-        dh.*,
-        CONCAT(u.firstName, ' ', u.lastName) as username,
-        u.role,
-        gb.version,
-        gb.name as title,
-        gb.file_size
-      FROM download_history dh
-      JOIN users u ON dh.user_id = u.id
-      JOIN game_builds gb ON dh.build_id = gb.id
-      ORDER BY dh.download_date DESC
-      LIMIT 100
-    `);
-    
-    res.json(downloads);
-  } catch (error) {
-    console.error('Download history fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-export default router;
+export default app;
