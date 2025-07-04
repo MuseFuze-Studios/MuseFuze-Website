@@ -210,7 +210,7 @@ const MuseFuzeFinances: React.FC = () => {
     e.preventDefault();
     
     try {
-      await staffAPI.createTransaction({
+      const transactionData = {
         type: 'income',
         category: 'Investment Funding',
         amount: fundsForm.amount,
@@ -219,7 +219,9 @@ const MuseFuzeFinances: React.FC = () => {
         justification: `Investment funding from ${fundsForm.investor_name || 'investor'}`,
         hmrc_category: 'Investment Income',
         date: new Date().toISOString().split('T')[0]
-      });
+      };
+      
+      await staffAPI.createTransaction(transactionData);
       
       fetchFinancialData();
       setShowAddFundsForm(false);
@@ -237,13 +239,15 @@ const MuseFuzeFinances: React.FC = () => {
 
   const generateTaxReport = async (reportType: 'vat' | 'corporation_tax') => {
     try {
-      const response = await staffAPI.generateTaxReport({
+      const reportData = {
         report_type: reportType,
         period_start: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
         period_end: new Date().toISOString().split('T')[0]
-      });
+      };
       
-      setSelectedTaxReport(response.data);
+      const response = await staffAPI.generateTaxReport(reportData);
+      
+      setSelectedTaxReport(response.data || response);
       setShowTaxReportModal(true);
     } catch (error) {
       console.error('Failed to generate tax report:', error);
@@ -521,13 +525,13 @@ const MuseFuzeFinances: React.FC = () => {
                     <div className="text-right">
                       <div className="text-blue-400 text-sm">Est: £{forecast.estimated.toLocaleString()}</div>
                       {forecast.actual > 0 && (
-                        <div className="text-white text-sm">Act: £{forecast.actual.toLocaleString()}</div>
+                        <div className="text-white text-sm">Act: £{Number(forecast.actual || 0).toLocaleString()}</div>
                       )}
                     </div>
                     <div className="w-24 bg-gray-700 rounded-full h-2">
                       <div
                         className="bg-blue-500 h-2 rounded-full"
-                        style={{ width: `${forecast.actual > 0 ? Math.min((forecast.actual / forecast.estimated) * 100, 100) : 0}%` }}
+                        style={{ width: `${Number(forecast.actual || 0) > 0 ? Math.min((Number(forecast.actual || 0) / Number(forecast.estimated || 1)) * 100, 100) : 0}%` }}
                       ></div>
                     </div>
                   </div>
@@ -564,7 +568,7 @@ const MuseFuzeFinances: React.FC = () => {
                     </span>
                     {transaction.vat_amount > 0 && (
                       <span className="px-2 py-1 bg-yellow-900/30 text-yellow-300 rounded text-xs">
-                        VAT: £{Number(transaction.vat_amount || 0).toFixed(2)}
+                        VAT: £{(Number(transaction.vat_amount) || 0).toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -584,7 +588,7 @@ const MuseFuzeFinances: React.FC = () => {
                     {transaction.type === 'income' ? '+' : '-'}£{transaction.amount.toLocaleString()}
                   </div>
                   <div className="text-xs text-gray-400">
-                    {transaction.currency || 'GBP'} • {Number(transaction.vat_rate || 0)}% VAT
+                    {transaction.currency || 'GBP'} • {(Number(transaction.vat_rate) || 0)}% VAT
                   </div>
                 </div>
               </div>
@@ -814,9 +818,9 @@ const MuseFuzeFinances: React.FC = () => {
                     <span className="text-yellow-300 font-medium">VAT Calculation</span>
                   </div>
                   <div className="text-sm text-gray-300">
-                    <div>Net Amount: £{Number(transactionForm.amount || 0).toFixed(2)}</div>
-                    <div>VAT ({Number(transactionForm.vat_rate || 0)}%): £{(Number(transactionForm.amount || 0) * Number(transactionForm.vat_rate || 0) / 100).toFixed(2)}</div>
-                    <div className="font-medium">Total: £{(Number(transactionForm.amount || 0) + (Number(transactionForm.amount || 0) * Number(transactionForm.vat_rate || 0) / 100)).toFixed(2)}</div>
+                    <div>Net Amount: £{(Number(transactionForm.amount) || 0).toFixed(2)}</div>
+                    <div>VAT ({(Number(transactionForm.vat_rate) || 0)}%): £{((Number(transactionForm.amount) || 0) * (Number(transactionForm.vat_rate) || 0) / 100).toFixed(2)}</div>
+                    <div className="font-medium">Total: £{((Number(transactionForm.amount) || 0) + ((Number(transactionForm.amount) || 0) * (Number(transactionForm.vat_rate) || 0) / 100)).toFixed(2)}</div>
                   </div>
                 </div>
               )}
