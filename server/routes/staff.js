@@ -526,12 +526,12 @@ router.post('/finance/transactions', validateFinanceTransaction, handleValidatio
     const { type, category, amount, vat_rate, description, justification, hmrc_category, date } = req.body;
     
     // Calculate VAT amount
-    const vatAmount = (amount * (vat_rate || 0)) / 100;
+    const vatAmount = (Number(amount || 0) * Number(vat_rate || 0)) / 100;
     
     const [result] = await pool.execute(`
       INSERT INTO finance_transactions (type, category, amount, currency, vat_rate, vat_amount, description, justification, hmrc_category, responsible_staff_id, date)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [type, category, amount, 'GBP', vat_rate || 20.00, vatAmount, description, justification, hmrc_category, req.user.id, date]);
+    `, [type, category, Number(amount || 0), 'GBP', Number(vat_rate || 20.00), Number(vatAmount), description, justification, hmrc_category, req.user.id, date]);
 
     res.status(201).json({ message: 'Transaction created successfully' });
   } catch (error) {

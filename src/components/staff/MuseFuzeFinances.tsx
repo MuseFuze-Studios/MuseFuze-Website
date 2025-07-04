@@ -564,7 +564,7 @@ const MuseFuzeFinances: React.FC = () => {
                     </span>
                     {transaction.vat_amount > 0 && (
                       <span className="px-2 py-1 bg-yellow-900/30 text-yellow-300 rounded text-xs">
-                        VAT: £{(transaction.vat_amount || 0).toFixed(2)}
+                        VAT: £{Number(transaction.vat_amount || 0).toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -584,7 +584,7 @@ const MuseFuzeFinances: React.FC = () => {
                     {transaction.type === 'income' ? '+' : '-'}£{transaction.amount.toLocaleString()}
                   </div>
                   <div className="text-xs text-gray-400">
-                    {transaction.currency || 'GBP'} • {transaction.vat_rate || 0}% VAT
+                    {transaction.currency || 'GBP'} • {Number(transaction.vat_rate || 0)}% VAT
                   </div>
                 </div>
               </div>
@@ -814,9 +814,9 @@ const MuseFuzeFinances: React.FC = () => {
                     <span className="text-yellow-300 font-medium">VAT Calculation</span>
                   </div>
                   <div className="text-sm text-gray-300">
-                    <div>Net Amount: £{transactionForm.amount.toFixed(2)}</div>
-                    <div>VAT ({transactionForm.vat_rate}%): £{(transactionForm.amount * transactionForm.vat_rate / 100).toFixed(2)}</div>
-                    <div className="font-medium">Total: £{(transactionForm.amount + (transactionForm.amount * transactionForm.vat_rate / 100)).toFixed(2)}</div>
+                    <div>Net Amount: £{Number(transactionForm.amount || 0).toFixed(2)}</div>
+                    <div>VAT ({Number(transactionForm.vat_rate || 0)}%): £{(Number(transactionForm.amount || 0) * Number(transactionForm.vat_rate || 0) / 100).toFixed(2)}</div>
+                    <div className="font-medium">Total: £{(Number(transactionForm.amount || 0) + (Number(transactionForm.amount || 0) * Number(transactionForm.vat_rate || 0) / 100)).toFixed(2)}</div>
                   </div>
                 </div>
               )}
