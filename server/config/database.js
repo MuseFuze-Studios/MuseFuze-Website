@@ -217,6 +217,7 @@ async function createTables() {
         download_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         download_duration INT,
         notes TEXT,
+        file_size BIGINT DEFAULT 0,
         FOREIGN KEY (build_id) REFERENCES game_builds(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
@@ -294,3 +295,5 @@ async function createTables() {
     throw error;
   }
 }
+
+export { pool };

@@ -295,6 +295,34 @@ const PlaytestScheduler: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Max Participants *
                 </label>
+                  Date *
+                  type="number"
+                  value={formData.max_participants}
+                  type="date"
+                  required
+                  min="1"
+                  max="50"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Time *
+                </label>
+                <input
+                  type="time"
+                  value={formData.scheduled_time || ''}
+                  onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Max Participants *
+                </label>
                 <input
                   type="number"
                   value={formData.max_participants}
@@ -305,19 +333,48 @@ const PlaytestScheduler: React.FC = () => {
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
+            </div>
 
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-violet-500/25"
-                >
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  placeholder="e.g., Discord, Office, Online"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Test Focus
+                </label>
+                <input
+                  type="text"
+                  value={formData.test_focus}
+                  onChange={(e) => setFormData({ ...formData, test_focus: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  placeholder="e.g., Combat System, UI/UX"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Requirements
+              </label>
+              <textarea
+                value={formData.requirements}
+                onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                placeholder="Any special requirements or equipment needed..."
+              />
+            </div>
                   Schedule Session
                 </button>
               </div>
