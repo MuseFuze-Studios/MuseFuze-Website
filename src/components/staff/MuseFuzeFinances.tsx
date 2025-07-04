@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, PieChart, Plus, Receipt, Target, FileText, Download, Calculator, AlertTriangle } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, PieChart, Plus, Receipt, Target, FileText, Download, Calculator, AlertTriangle, Building, Settings } from 'lucide-react';
 import { staffAPI } from '../../services/api';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate, formatPercentage } from '../../utils/formatters';
 
 interface Transaction {
   id: number;
@@ -73,8 +73,8 @@ const MuseFuzeFinances: React.FC = () => {
   const [showBudgetForm, setShowBudgetForm] = useState(false);
   const [showAddFundsForm, setShowAddFundsForm] = useState(false);
   const [showTaxReportModal, setShowTaxReportModal] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   const [showCompanyInfoModal, setShowCompanyInfoModal] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   const [selectedTaxReport, setSelectedTaxReport] = useState<TaxReport | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
@@ -547,6 +547,21 @@ Date:      _______________________
         </div>
         <div className="flex space-x-2">
           <button
+            onClick={() => {
+              setCompanyInfoForm({
+                company_name: companyInfo?.company_name || 'MuseFuze Studios Ltd',
+                company_number: companyInfo?.company_number || '09876543',
+                vat_registration: companyInfo?.vat_registration || 'GB987654321',
+                utr: companyInfo?.utr || '1234567890',
+                fiscal_year_end: companyInfo?.fiscal_year_end || ''
+              });
+              setShowCompanyInfoModal(true);
+            }}
+            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm"
+          >
+            Company Info
+          </button>
+          <button
             onClick={() => setShowAddFundsForm(true)}
             className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-green-500/25"
           >
@@ -630,21 +645,6 @@ Date:      _______________________
             HMRC Tax Reports
           </h3>
           <div className="flex space-x-2 flex-wrap gap-2">
-            <button
-              onClick={() => {
-                setCompanyInfoForm({
-                  company_name: companyInfo?.company_name || 'MuseFuze Studios Ltd',
-                  company_number: companyInfo?.company_number || '09876543',
-                  vat_registration: companyInfo?.vat_registration || 'GB987654321',
-                  utr: companyInfo?.utr || '1234567890',
-                  fiscal_year_end: companyInfo?.fiscal_year_end || ''
-                });
-                setShowCompanyInfoModal(true);
-              }}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm"
-            >
-              Company Info
-            </button>
             <button
               onClick={() => generateTaxReport('vat')}
               className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm"
