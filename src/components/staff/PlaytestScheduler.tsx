@@ -44,6 +44,7 @@ const PlaytestScheduler: React.FC = () => {
     description: '',
     build_id: '',
     scheduled_date: '',
+    scheduled_time: '',
     duration_minutes: 60,
     max_participants: 10,
     location: '',
@@ -99,11 +100,14 @@ const PlaytestScheduler: React.FC = () => {
     e.preventDefault();
     
     try {
+      // Combine date and time into a datetime string
+      const scheduledDateTime = `${formData.scheduled_date}T${formData.scheduled_time}:00`;
+      
       const data = {
         title: formData.title,
         description: formData.description,
         build_id: parseInt(formData.build_id),
-        scheduled_date: formData.scheduled_date,
+        scheduled_date: scheduledDateTime,
         duration_minutes: formData.duration_minutes,
         max_participants: formData.max_participants,
         location: formData.location,
@@ -119,6 +123,7 @@ const PlaytestScheduler: React.FC = () => {
         description: '',
         build_id: '',
         scheduled_date: '',
+        scheduled_time: '',
         duration_minutes: 60,
         max_participants: 10,
         location: '',
@@ -264,10 +269,10 @@ const PlaytestScheduler: React.FC = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Date & Time *
+                    Date *
                   </label>
                   <input
-                    type="datetime-local"
+                    type="date"
                     value={formData.scheduled_date}
                     onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
                     required
@@ -277,15 +282,13 @@ const PlaytestScheduler: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Duration (minutes) *
+                    Time *
                   </label>
                   <input
-                    type="number"
-                    value={formData.duration_minutes}
-                    onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) })}
+                    type="time"
+                    value={formData.scheduled_time || ''}
+                    onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
                     required
-                    min="15"
-                    max="480"
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
                 </div>
@@ -293,28 +296,15 @@ const PlaytestScheduler: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Max Participants *
-                </label>
-                  Date *
-                  type="number"
-                  value={formData.max_participants}
-                  type="date"
-                  required
-                  min="1"
-                  max="50"
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Time *
+                  Duration (minutes) *
                 </label>
                 <input
-                  type="time"
-                  value={formData.scheduled_time || ''}
-                  onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
+                  type="number"
+                  value={formData.duration_minutes}
+                  onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) })}
                   required
+                  min="15"
+                  max="480"
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
@@ -333,48 +323,74 @@ const PlaytestScheduler: React.FC = () => {
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
-            </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  placeholder="e.g., Discord, Office, Online"
-                />
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    placeholder="e.g., Discord, Office, Online"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Test Focus
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.test_focus}
+                    onChange={(e) => setFormData({ ...formData, test_focus: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    placeholder="e.g., Combat System, UI/UX"
+                  />
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Test Focus
+                  Requirements
                 </label>
-                <input
-                  type="text"
-                  value={formData.test_focus}
-                  onChange={(e) => setFormData({ ...formData, test_focus: e.target.value })}
+                <textarea
+                  value={formData.requirements}
+                  onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
+                  rows={3}
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  placeholder="e.g., Combat System, UI/UX"
+                  placeholder="Any special requirements or equipment needed..."
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Requirements
-              </label>
-              <textarea
-                value={formData.requirements}
-                onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                rows={3}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                placeholder="Any special requirements or equipment needed..."
-              />
-            </div>
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForm(false);
+                    setFormData({
+                      title: '',
+                      description: '',
+                      build_id: '',
+                      scheduled_date: '',
+                      scheduled_time: '',
+                      duration_minutes: 60,
+                      max_participants: 10,
+                      location: '',
+                      test_focus: '',
+                      requirements: ''
+                    });
+                  }}
+                  className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-violet-500/25"
+                >
                   Schedule Session
                 </button>
               </div>
