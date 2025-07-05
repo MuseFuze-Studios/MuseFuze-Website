@@ -3,6 +3,16 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+async function ensureColumn(table, column, definition) {
+  const [rows] = await pool.execute(
+    `SHOW COLUMNS FROM \`${table}\` LIKE ?`,
+    [column]
+  );
+  if (rows.length === 0) {
+    await pool.execute(`ALTER TABLE \`${table}\` ADD COLUMN ${definition}`);
+  }
+}
+
 const DB_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
@@ -354,7 +364,13 @@ async function createTables() {
         FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
-    
+
+    await ensureColumn(
+      'user_contracts',
+      'assigned_by',
+      'assigned_by INT NULL'
+    );
+
     // Contract requests
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS contract_requests (
@@ -370,6 +386,22 @@ async function createTables() {
         FOREIGN KEY (resolved_by) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
+
+    await ensureColumn(
+      'contract_requests',
+      'status',
+      "status ENUM('open','resolved') DEFAULT 'open'"
+    );
+    await ensureColumn(
+      'contract_requests',
+      'resolved_by',
+      'resolved_by INT NULL'
+    );
+    await ensureColumn(
+      'contract_requests',
+      'resolved_at',
+      'resolved_at TIMESTAMP NULL'
+    );
     // Insert default company info if not exists
     await pool.execute(`
       INSERT IGNORE INTO company_info (id, company_name, company_number, vat_registration, utr)
