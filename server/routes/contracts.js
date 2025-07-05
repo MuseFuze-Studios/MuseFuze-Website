@@ -201,7 +201,6 @@ router.get('/:id/diff', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 // Request contract change
 router.post('/request', authenticateToken, requireStaff, async (req, res) => {
   try {
@@ -335,7 +334,6 @@ router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
     ) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-
     const { outcome = 'approved', notes = '', newContent } = req.body;
 
     await pool.execute(
@@ -386,7 +384,6 @@ router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
       req.user.id,
       req.ip
     );
-
     // notify user
     try {
       const [info] = await pool.execute(

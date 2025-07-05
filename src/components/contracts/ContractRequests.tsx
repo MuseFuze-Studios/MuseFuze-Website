@@ -35,7 +35,6 @@ const ContractRequests: React.FC = () => {
       console.error('Failed to load requests', err);
     }
   };
-
   const open = async (id: number) => {
     try {
       const res = await contractAPI.getRequest(id);
@@ -52,6 +51,7 @@ const ContractRequests: React.FC = () => {
     try {
       await contractAPI.resolveRequest(active.id, { outcome, notes: reason, newContent: outcome === 'approved' && active.type === 'amend' ? newContent : undefined });
       setActive(null);
+      
       await load();
     } catch (err) {
       console.error('Failed to resolve request', err);
