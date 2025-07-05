@@ -71,14 +71,14 @@ const Team = () => {
   ];
 
   return (
-    <section id="team" className="py-24 bg-white">
+    <section id="team" className="py-24 bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-gray-900">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-white">
             The MuseFuze Team
           </h2>
           <div className="w-24 h-1 bg-gradient-to-r from-electric to-neon mx-auto mb-8"></div>
-          <p className="text-xl font-rajdhani text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl font-rajdhani text-gray-400 max-w-2xl mx-auto">
             A bunch of crazy people...we know!
           </p>
         </div>
@@ -86,24 +86,24 @@ const Team = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {teamMembers.map((member) => (
             <div key={member.name} className="text-center group">
-              <div className="bg-gray-50 rounded-3xl p-6 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100">
+              <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-white/10">
                 <div className="relative mb-6">
                   {member.avatar ? (
                     <img
                       src={member.avatar}
                       alt={member.name}
-                      className="w-20 h-20 rounded-2xl mx-auto object-cover border-2 border-gray-200 group-hover:border-electric/50 transition-colors duration-300"
+                      className="w-20 h-20 rounded-2xl mx-auto object-cover border-2 border-white/10 group-hover:border-electric/50 transition-colors duration-300"
                     />
                   ) : (
-                    <div className="w-20 h-20 rounded-2xl mx-auto bg-gradient-to-br from-electric/10 to-neon/10 border-2 border-gray-200 group-hover:border-electric/50 transition-colors duration-300 flex items-center justify-center">
+                    <div className="w-20 h-20 rounded-2xl mx-auto bg-gradient-to-br from-electric/10 to-neon/10 border-2 border-white/10 group-hover:border-electric/50 transition-colors duration-300 flex items-center justify-center">
                       <User className="h-10 w-10 text-gray-400" />
                     </div>
                   )}
                 </div>
 
-                <h3 className="text-xl font-orbitron font-bold mb-2 text-gray-900">{member.name}</h3>
+                <h3 className="text-xl font-orbitron font-bold mb-2 text-white">{member.name}</h3>
                 <p className="text-electric font-rajdhani font-medium mb-3">{member.role}</p>
-                <p className="text-gray-600 font-rajdhani text-sm mb-4 italic leading-relaxed">
+                <p className="text-gray-400 font-rajdhani text-sm mb-4 italic leading-relaxed">
                   "{member.personality}"
                 </p>
 
