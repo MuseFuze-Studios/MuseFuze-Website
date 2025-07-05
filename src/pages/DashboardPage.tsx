@@ -21,7 +21,8 @@ import {
   XCircle,
   Clock,
   ArrowRight,
-  Info
+  Info,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { userAPI } from '../services/api';
@@ -163,30 +164,33 @@ const DashboardPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-black">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-gray-900/50 backdrop-blur-xl border-b border-gray-700 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link to="/" className="text-2xl font-bold text-gray-900">
-                MuseFuze
+              <Link to="/" className="flex items-center space-x-2">
+                <Zap className="h-6 w-6 text-electric" />
+                <span className="text-xl font-orbitron font-bold bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">
+                  MuseFuze
+                </span>
               </Link>
-              <span className="text-gray-400">|</span>
-              <span className="text-gray-600 font-medium">Account</span>
+              <span className="text-gray-500">|</span>
+              <span className="text-gray-300 font-rajdhani font-medium">Account</span>
             </div>
             <div className="flex items-center space-x-4">
               {isStaffOrAbove && (
                 <Link
                   to="/staff"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm"
+                  className="px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 font-rajdhani font-medium text-sm shadow-lg hover:shadow-violet-500/25"
                 >
                   Staff Dashboard
                 </Link>
               )}
               <button
                 onClick={logout}
-                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm"
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors duration-200 font-rajdhani font-medium text-sm"
               >
                 Sign out
               </button>
@@ -198,33 +202,38 @@ const DashboardPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
-          <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-gray-200">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+          <div className="lg:w-80 flex-shrink-0">
+            <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-gray-700 p-6 sticky top-24">
+              <div className="flex items-center space-x-4 mb-8 pb-6 border-b border-gray-700">
+                <div className="w-16 h-16 bg-gradient-to-br from-electric to-neon rounded-full flex items-center justify-center text-black font-orbitron font-bold text-xl">
                   {user?.firstName?.[0]}{user?.lastName?.[0]}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{user?.firstName} {user?.lastName}</h3>
-                  <p className="text-sm text-gray-500">{user?.email}</p>
+                  <h3 className="font-orbitron font-bold text-white text-lg">{user?.firstName} {user?.lastName}</h3>
+                  <p className="text-gray-400 font-rajdhani">{user?.email}</p>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-rajdhani font-bold mt-1 ${getRoleBadgeColor(user?.role || 'user')}`}>
+                    {formatRoleName(user?.role || 'user')}
+                  </span>
                 </div>
               </div>
               
-              <nav className="space-y-1">
+              <nav className="space-y-2">
                 {sidebarItems.map((item) => {
                   const Icon = item.icon;
                   return (
                     <button
                       key={item.id}
                       onClick={() => setActiveSection(item.id)}
-                      className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors duration-200 ${
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 font-rajdhani font-medium group ${
                         activeSection === item.id
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-50'
+                          ? 'bg-gradient-to-r from-electric/20 to-neon/20 text-electric border border-electric/30 shadow-lg shadow-electric/10'
+                          : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
                       }`}
                     >
-                      <Icon className="h-5 w-5" />
-                      <span className="font-medium">{item.label}</span>
+                      <Icon className={`h-5 w-5 transition-transform duration-200 ${
+                        activeSection === item.id ? 'scale-110' : 'group-hover:scale-105'
+                      }`} />
+                      <span>{item.label}</span>
                     </button>
                   );
                 })}
@@ -235,59 +244,59 @@ const DashboardPage: React.FC = () => {
           {/* Main Content */}
           <div className="flex-1">
             {activeSection === 'overview' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Account Overview</h1>
-                  <p className="text-gray-600">Manage your MuseFuze account settings and preferences</p>
+                  <h1 className="text-4xl font-orbitron font-bold text-white mb-3 bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">Account Overview</h1>
+                  <p className="text-gray-400 font-rajdhani text-lg">Manage your MuseFuze account settings and preferences</p>
                 </div>
 
                 {/* Quick Actions */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <User className="h-5 w-5 text-blue-600" />
+                  <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-6 hover:border-electric/30 transition-all duration-300 hover:shadow-xl hover:shadow-electric/10 group">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl flex items-center justify-center border border-blue-500/30">
+                        <User className="h-6 w-6 text-blue-400" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">Personal Info</h3>
+                      <h3 className="font-orbitron font-bold text-white">Personal Info</h3>
                     </div>
-                    <p className="text-gray-600 text-sm mb-4">Update your name, email, and other personal details</p>
+                    <p className="text-gray-400 font-rajdhani mb-4">Update your name, email, and other personal details</p>
                     <button
                       onClick={() => setActiveSection('personal-info')}
-                      className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"
+                      className="text-electric hover:text-neon font-rajdhani font-medium flex items-center space-x-2 group-hover:translate-x-1 transition-transform duration-200"
                     >
                       <span>Manage</span>
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <Shield className="h-5 w-5 text-green-600" />
+                  <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-6 hover:border-electric/30 transition-all duration-300 hover:shadow-xl hover:shadow-electric/10 group">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl flex items-center justify-center border border-green-500/30">
+                        <Shield className="h-6 w-6 text-green-400" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">Security</h3>
+                      <h3 className="font-orbitron font-bold text-white">Security</h3>
                     </div>
-                    <p className="text-gray-600 text-sm mb-4">Keep your account secure with strong authentication</p>
+                    <p className="text-gray-400 font-rajdhani mb-4">Keep your account secure with strong authentication</p>
                     <button
                       onClick={() => setActiveSection('security')}
-                      className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"
+                      className="text-electric hover:text-neon font-rajdhani font-medium flex items-center space-x-2 group-hover:translate-x-1 transition-transform duration-200"
                     >
                       <span>Review</span>
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <Eye className="h-5 w-5 text-purple-600" />
+                  <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-6 hover:border-electric/30 transition-all duration-300 hover:shadow-xl hover:shadow-electric/10 group">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl flex items-center justify-center border border-purple-500/30">
+                        <Eye className="h-6 w-6 text-purple-400" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">Privacy</h3>
+                      <h3 className="font-orbitron font-bold text-white">Privacy</h3>
                     </div>
-                    <p className="text-gray-600 text-sm mb-4">Control your data and privacy settings</p>
+                    <p className="text-gray-400 font-rajdhani mb-4">Control your data and privacy settings</p>
                     <button
                       onClick={() => setActiveSection('privacy')}
-                      className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"
+                      className="text-electric hover:text-neon font-rajdhani font-medium flex items-center space-x-2 group-hover:translate-x-1 transition-transform duration-200"
                     >
                       <span>Manage</span>
                       <ArrowRight className="h-4 w-4" />
@@ -296,22 +305,22 @@ const DashboardPage: React.FC = () => {
                 </div>
 
                 {/* Account Status */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">Account Status</h3>
-                  <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-8">
+                  <h3 className="font-orbitron font-bold text-white text-xl mb-6">Account Status</h3>
+                  <div className="grid md:grid-cols-2 gap-8">
                     <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        <span className="font-medium text-gray-900">Account Verified</span>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <CheckCircle className="h-6 w-6 text-green-400" />
+                        <span className="font-rajdhani font-bold text-white text-lg">Account Verified</span>
                       </div>
-                      <p className="text-gray-600 text-sm">Your email address has been verified</p>
+                      <p className="text-gray-400 font-rajdhani">Your email address has been verified and your account is active</p>
                     </div>
                     <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <div className={`w-3 h-3 rounded-full ${getRoleBadgeColor(user?.role || 'user').split(' ')[0]}`}></div>
-                        <span className="font-medium text-gray-900">{formatRoleName(user?.role || 'user')}</span>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className={`w-4 h-4 rounded-full ${getRoleBadgeColor(user?.role || 'user').split(' ')[0]}`}></div>
+                        <span className="font-rajdhani font-bold text-white text-lg">{formatRoleName(user?.role || 'user')}</span>
                       </div>
-                      <p className="text-gray-600 text-sm">Your current access level</p>
+                      <p className="text-gray-400 font-rajdhani">Your current access level and permissions</p>
                     </div>
                   </div>
                 </div>
@@ -319,20 +328,20 @@ const DashboardPage: React.FC = () => {
             )}
 
             {activeSection === 'personal-info' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Personal Info</h1>
-                  <p className="text-gray-600">Update your personal information and contact details</p>
+                  <h1 className="text-4xl font-orbitron font-bold text-white mb-3 bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">Personal Info</h1>
+                  <p className="text-gray-400 font-rajdhani text-lg">Update your personal information and contact details</p>
                 </div>
 
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                  <div className="p-6 border-b border-gray-200">
+                <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700">
+                  <div className="p-6 border-b border-gray-700">
                     <div className="flex justify-between items-center">
-                      <h3 className="font-semibold text-gray-900">Basic Information</h3>
+                      <h3 className="font-orbitron font-bold text-white text-xl">Basic Information</h3>
                       {!editingProfile && (
                         <button
                           onClick={() => setEditingProfile(true)}
-                          className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"
+                          className="text-electric hover:text-neon font-rajdhani font-medium flex items-center space-x-2 transition-colors duration-200"
                         >
                           <Edit3 className="h-4 w-4" />
                           <span>Edit</span>
@@ -343,12 +352,12 @@ const DashboardPage: React.FC = () => {
 
                   <div className="p-6">
                     {profileMessage && (
-                      <div className={`mb-6 p-4 rounded-lg ${
+                      <div className={`mb-6 p-4 rounded-xl border ${
                         profileMessage.includes('successfully') 
-                          ? 'bg-green-50 border border-green-200 text-green-800' 
-                          : 'bg-red-50 border border-red-200 text-red-800'
+                          ? 'bg-green-500/10 border-green-500/30 text-green-400' 
+                          : 'bg-red-500/10 border-red-500/30 text-red-400'
                       }`}>
-                        {profileMessage}
+                        <p className="font-rajdhani font-medium">{profileMessage}</p>
                       </div>
                     )}
 
@@ -356,46 +365,46 @@ const DashboardPage: React.FC = () => {
                       <form onSubmit={handleProfileUpdate} className="space-y-6">
                         <div className="grid md:grid-cols-2 gap-6">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-rajdhani font-medium text-gray-300 mb-2">
                               First Name
                             </label>
                             <input
                               type="text"
                               value={profileForm.firstName}
                               onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric/50 focus:border-electric transition-all duration-200 text-white font-rajdhani"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-rajdhani font-medium text-gray-300 mb-2">
                               Last Name
                             </label>
                             <input
                               type="text"
                               value={profileForm.lastName}
                               onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric/50 focus:border-electric transition-all duration-200 text-white font-rajdhani"
                             />
                           </div>
                         </div>
                         
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-rajdhani font-medium text-gray-300 mb-2">
                             Email Address
                           </label>
                           <input
                             type="email"
                             value={profileForm.email}
                             onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric/50 focus:border-electric transition-all duration-200 text-white font-rajdhani"
                           />
                         </div>
 
-                        <div className="flex space-x-3">
+                        <div className="flex space-x-4">
                           <button
                             type="submit"
                             disabled={profileLoading}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors duration-200 font-medium"
+                            className="px-6 py-3 bg-gradient-to-r from-electric to-neon text-black font-rajdhani font-bold rounded-lg hover:shadow-xl hover:shadow-electric/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {profileLoading ? 'Saving...' : 'Save Changes'}
                           </button>
@@ -410,7 +419,7 @@ const DashboardPage: React.FC = () => {
                               });
                               setProfileMessage('');
                             }}
-                            className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium"
+                            className="px-6 py-3 text-gray-400 hover:text-white transition-colors duration-200 font-rajdhani font-medium"
                           >
                             Cancel
                           </button>
@@ -420,21 +429,21 @@ const DashboardPage: React.FC = () => {
                       <div className="space-y-6">
                         <div className="grid md:grid-cols-2 gap-6">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                            <p className="text-gray-900">{user?.firstName}</p>
+                            <label className="block text-sm font-rajdhani font-medium text-gray-400 mb-2">First Name</label>
+                            <p className="text-white font-rajdhani text-lg">{user?.firstName}</p>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                            <p className="text-gray-900">{user?.lastName}</p>
+                            <label className="block text-sm font-rajdhani font-medium text-gray-400 mb-2">Last Name</label>
+                            <p className="text-white font-rajdhani text-lg">{user?.lastName}</p>
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                          <p className="text-gray-900">{user?.email}</p>
+                          <label className="block text-sm font-rajdhani font-medium text-gray-400 mb-2">Email Address</label>
+                          <p className="text-white font-rajdhani text-lg">{user?.email}</p>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Account Role</label>
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRoleBadgeColor(user?.role || 'user')}`}>
+                          <label className="block text-sm font-rajdhani font-medium text-gray-400 mb-2">Account Role</label>
+                          <span className={`inline-flex items-center px-4 py-2 rounded-xl font-rajdhani font-bold ${getRoleBadgeColor(user?.role || 'user')}`}>
                             {formatRoleName(user?.role || 'user')}
                           </span>
                         </div>
@@ -446,48 +455,48 @@ const DashboardPage: React.FC = () => {
             )}
 
             {activeSection === 'security' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Security</h1>
-                  <p className="text-gray-600">Keep your account secure and monitor security activity</p>
+                  <h1 className="text-4xl font-orbitron font-bold text-white mb-3 bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">Security</h1>
+                  <p className="text-gray-400 font-rajdhani text-lg">Keep your account secure and monitor security activity</p>
                 </div>
 
                 <div className="grid gap-6">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <Key className="h-5 w-5 text-green-600" />
+                  <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-6">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl flex items-center justify-center border border-green-500/30">
+                        <Key className="h-6 w-6 text-green-400" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">Password</h3>
-                        <p className="text-gray-600 text-sm">Last changed 30 days ago</p>
+                        <h3 className="font-orbitron font-bold text-white">Password</h3>
+                        <p className="text-gray-400 font-rajdhani">Last changed 30 days ago</p>
                       </div>
                     </div>
-                    <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                    <button className="text-electric hover:text-neon font-rajdhani font-medium transition-colors duration-200">
                       Change Password
                     </button>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Monitor className="h-5 w-5 text-blue-600" />
+                  <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-6">
+                    <div className="flex items-center space-x-4 mb-6">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl flex items-center justify-center border border-blue-500/30">
+                        <Monitor className="h-6 w-6 text-blue-400" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">Recent Activity</h3>
-                        <p className="text-gray-600 text-sm">Monitor your account activity</p>
+                        <h3 className="font-orbitron font-bold text-white">Recent Activity</h3>
+                        <p className="text-gray-400 font-rajdhani">Monitor your account activity</p>
                       </div>
                     </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between py-3 border-b border-gray-700">
                         <div className="flex items-center space-x-3">
-                          <Monitor className="h-4 w-4 text-gray-400" />
+                          <Monitor className="h-5 w-5 text-gray-400" />
                           <div>
-                            <p className="text-sm font-medium text-gray-900">Current session</p>
-                            <p className="text-xs text-gray-500">Chrome on Windows • Active now</p>
+                            <p className="font-rajdhani font-medium text-white">Current session</p>
+                            <p className="text-gray-400 font-rajdhani text-sm">Chrome on Windows • Active now</p>
                           </div>
                         </div>
-                        <span className="text-xs text-green-600 font-medium">Active</span>
+                        <span className="text-green-400 font-rajdhani font-medium text-sm">Active</span>
                       </div>
                     </div>
                   </div>
@@ -496,42 +505,42 @@ const DashboardPage: React.FC = () => {
             )}
 
             {activeSection === 'privacy' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy & Data</h1>
-                  <p className="text-gray-600">Control your data and privacy settings</p>
+                  <h1 className="text-4xl font-orbitron font-bold text-white mb-3 bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">Privacy & Data</h1>
+                  <p className="text-gray-400 font-rajdhani text-lg">Control your data and privacy settings</p>
                 </div>
 
                 <div className="grid gap-6">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4">Cookie Preferences</h3>
-                    <p className="text-gray-600 text-sm mb-4">
+                  <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-6">
+                    <h3 className="font-orbitron font-bold text-white text-xl mb-4">Cookie Preferences</h3>
+                    <p className="text-gray-400 font-rajdhani mb-6">
                       Manage your cookie preferences and control what data we collect.
                     </p>
                     <CookiePreferencesButton />
                   </div>
 
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4">Download Your Data</h3>
-                    <p className="text-gray-600 text-sm mb-4">
+                  <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-6">
+                    <h3 className="font-orbitron font-bold text-white text-xl mb-4">Download Your Data</h3>
+                    <p className="text-gray-400 font-rajdhani mb-6">
                       Download a copy of all your personal data stored in our systems.
                     </p>
                     <button
                       onClick={handleDataDownload}
                       disabled={loading}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors duration-200 font-medium"
+                      className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-electric to-neon text-black font-rajdhani font-bold rounded-lg hover:shadow-xl hover:shadow-electric/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Download className="h-4 w-4" />
                       <span>{loading ? 'Preparing Download...' : 'Download Data'}</span>
                     </button>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-semibold text-gray-900">Data We Store</h3>
+                  <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="font-orbitron font-bold text-white text-xl">Data We Store</h3>
                       <button
                         onClick={() => setShowDataDetails(!showDataDetails)}
-                        className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"
+                        className="text-electric hover:text-neon font-rajdhani font-medium flex items-center space-x-2 transition-colors duration-200"
                       >
                         {showDataDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         <span>{showDataDetails ? 'Hide' : 'Show'} Details</span>
@@ -539,20 +548,20 @@ const DashboardPage: React.FC = () => {
                     </div>
                     
                     {showDataDetails && (
-                      <div className="space-y-4 text-sm">
+                      <div className="space-y-4">
                         <div className="grid md:grid-cols-2 gap-4">
-                          <div className="p-4 bg-gray-50 rounded-lg">
-                            <h4 className="font-medium text-gray-900 mb-2">Personal Information</h4>
-                            <ul className="text-gray-600 space-y-1">
+                          <div className="p-4 bg-gray-700/30 rounded-xl border border-gray-600">
+                            <h4 className="font-rajdhani font-bold text-white mb-3">Personal Information</h4>
+                            <ul className="text-gray-400 font-rajdhani space-y-1 text-sm">
                               <li>• Name and email address</li>
                               <li>• Account creation date</li>
                               <li>• Role and permissions</li>
                               <li>• Cookie preferences</li>
                             </ul>
                           </div>
-                          <div className="p-4 bg-gray-50 rounded-lg">
-                            <h4 className="font-medium text-gray-900 mb-2">Activity Data</h4>
-                            <ul className="text-gray-600 space-y-1">
+                          <div className="p-4 bg-gray-700/30 rounded-xl border border-gray-600">
+                            <h4 className="font-rajdhani font-bold text-white mb-3">Activity Data</h4>
+                            <ul className="text-gray-400 font-rajdhani space-y-1 text-sm">
                               <li>• Login sessions</li>
                               <li>• Content you've created</li>
                               <li>• Messages and communications</li>
@@ -564,17 +573,17 @@ const DashboardPage: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6">
                     <div className="flex items-center space-x-3 mb-4">
-                      <AlertTriangle className="h-6 w-6 text-red-600" />
-                      <h3 className="font-semibold text-red-900">Delete Account</h3>
+                      <AlertTriangle className="h-6 w-6 text-red-400" />
+                      <h3 className="font-orbitron font-bold text-red-400 text-xl">Delete Account</h3>
                     </div>
-                    <p className="text-red-700 text-sm mb-4">
+                    <p className="text-red-300 font-rajdhani mb-6">
                       Permanently delete your account and all associated data. This action cannot be undone.
                     </p>
                     <button
                       onClick={handleAccountDeletion}
-                      className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 font-medium"
+                      className="flex items-center space-x-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 font-rajdhani font-bold"
                     >
                       <Trash2 className="h-4 w-4" />
                       <span>Delete Account</span>
@@ -585,52 +594,52 @@ const DashboardPage: React.FC = () => {
             )}
 
             {activeSection === 'preferences' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Preferences</h1>
-                  <p className="text-gray-600">Customize your experience and notification settings</p>
+                  <h1 className="text-4xl font-orbitron font-bold text-white mb-3 bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">Preferences</h1>
+                  <p className="text-gray-400 font-rajdhani text-lg">Customize your experience and notification settings</p>
                 </div>
 
                 <div className="grid gap-6">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4">Quick Links</h3>
+                  <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-6">
+                    <h3 className="font-orbitron font-bold text-white text-xl mb-6">Quick Links</h3>
                     <div className="grid md:grid-cols-2 gap-4">
                       <Link
                         to="/privacy-policy"
-                        className="p-4 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors duration-200 text-center"
+                        className="p-6 border border-gray-600 hover:border-electric/50 rounded-xl transition-all duration-300 text-center group hover:bg-gray-700/30"
                       >
-                        <Shield className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                        <h4 className="font-medium text-gray-900">Privacy Policy</h4>
-                        <p className="text-gray-600 text-sm">Review our privacy practices</p>
+                        <Shield className="h-10 w-10 text-electric mx-auto mb-3 group-hover:scale-110 transition-transform duration-200" />
+                        <h4 className="font-orbitron font-bold text-white mb-2">Privacy Policy</h4>
+                        <p className="text-gray-400 font-rajdhani text-sm">Review our privacy practices</p>
                       </Link>
                       
                       <Link
                         to="/terms"
-                        className="p-4 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors duration-200 text-center"
+                        className="p-6 border border-gray-600 hover:border-electric/50 rounded-xl transition-all duration-300 text-center group hover:bg-gray-700/30"
                       >
-                        <Settings className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                        <h4 className="font-medium text-gray-900">Terms of Service</h4>
-                        <p className="text-gray-600 text-sm">Read our terms and conditions</p>
+                        <Settings className="h-10 w-10 text-electric mx-auto mb-3 group-hover:scale-110 transition-transform duration-200" />
+                        <h4 className="font-orbitron font-bold text-white mb-2">Terms of Service</h4>
+                        <p className="text-gray-400 font-rajdhani text-sm">Read our terms and conditions</p>
                       </Link>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4">Account Information</h3>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Account ID</span>
-                        <span className="text-gray-900 font-mono">{user?.id}</span>
+                  <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-6">
+                    <h3 className="font-orbitron font-bold text-white text-xl mb-6">Account Information</h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between py-3 border-b border-gray-700">
+                        <span className="text-gray-400 font-rajdhani">Account ID</span>
+                        <span className="text-white font-mono">{user?.id}</span>
                       </div>
-                      <div className="flex justify-between py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Member Since</span>
-                        <span className="text-gray-900">
+                      <div className="flex justify-between py-3 border-b border-gray-700">
+                        <span className="text-gray-400 font-rajdhani">Member Since</span>
+                        <span className="text-white font-rajdhani">
                           {userData?.userData.createdAt ? new Date(userData.userData.createdAt).toLocaleDateString() : 'Loading...'}
                         </span>
                       </div>
-                      <div className="flex justify-between py-2">
-                        <span className="text-gray-600">Last Updated</span>
-                        <span className="text-gray-900">
+                      <div className="flex justify-between py-3">
+                        <span className="text-gray-400 font-rajdhani">Last Updated</span>
+                        <span className="text-white font-rajdhani">
                           {userData?.userData.updatedAt ? new Date(userData.userData.updatedAt).toLocaleDateString() : 'Loading...'}
                         </span>
                       </div>
