@@ -185,7 +185,7 @@ const TermsPage: React.FC = () => {
               </p>
               <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10">
                 <p className="text-electric font-rajdhani">
-                  Email: legal@musefuze.com<br />
+                  Email: admin@musefuzestudios.com<br />
                   Subject: Terms of Service Inquiry<br />
                   Address: MuseFuze Studios Legal Department
                 </p>

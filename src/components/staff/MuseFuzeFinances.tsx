@@ -608,40 +608,6 @@ Date:      _______________________
     return 'text-green-400 bg-green-900/30';
   };
 
-  const {
-    totalIncome,
-    totalExpenses,
-    totalVAT,
-    netIncome,
-    totalBudgetAllocated,
-    totalBudgetSpent,
-    estimatedCorpTax
-  } = useMemo(() => {
-    const income = transactions
-      .filter(t => t.type === 'income' && t.status === 'approved')
-      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
-    const expenses = transactions
-      .filter(t => t.type === 'expense' && t.status === 'approved')
-      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
-    const vat = transactions
-      .filter(t => t.status === 'approved')
-      .reduce((sum, t) => sum + parseFloat((t.vat_amount || 0).toString()), 0);
-    const net = income - expenses;
-    const budgetAllocated = budgets.reduce((sum, b) => sum + parseFloat(b.allocated.toString()), 0);
-    const budgetSpent = budgets.reduce((sum, b) => sum + parseFloat(b.spent.toString()), 0);
-    const corpTaxRate = 0.19; // 19%
-    const corpTax = Math.max(0, net * corpTaxRate);
-
-    return {
-      totalIncome: income,
-      totalExpenses: expenses,
-      totalVAT: vat,
-      netIncome: net,
-      totalBudgetAllocated: budgetAllocated,
-      totalBudgetSpent: budgetSpent,
-      estimatedCorpTax: corpTax
-    };
-  }, [transactions, budgets]);
     
   const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
 
