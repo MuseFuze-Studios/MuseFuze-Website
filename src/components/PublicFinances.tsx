@@ -107,31 +107,31 @@ const PublicFinances: React.FC = () => {
           {/* Financial Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {/* Total Income */}
-            <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100 group">
+            <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-white/10 group">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-green-500/10 to-green-600/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <TrendingUp className="h-6 w-6 text-green-600" />
                 </div>
-                <span className="text-2xl font-bold text-gray-900">{formatCurrency(financialData.totalIncome)}</span>
+                <span className="text-2xl font-bold text-white">{formatCurrency(financialData.totalIncome)}</span>
               </div>
               <h3 className="text-green-600 font-orbitron font-bold mb-2">Total Income</h3>
-              <div className="text-sm text-gray-500 font-rajdhani">Year to date</div>
+              <div className="text-sm text-gray-400 font-rajdhani">Year to date</div>
             </div>
 
             {/* Total Expenses */}
-            <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100 group">
+            <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-white/10 group">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-red-500/10 to-red-600/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <TrendingDown className="h-6 w-6 text-red-600" />
                 </div>
-                <span className="text-2xl font-bold text-gray-900">{formatCurrency(financialData.totalExpenses)}</span>
+                <span className="text-2xl font-bold text-white">{formatCurrency(financialData.totalExpenses)}</span>
               </div>
               <h3 className="text-red-600 font-orbitron font-bold mb-2">Total Expenses</h3>
-              <div className="text-sm text-gray-500 font-rajdhani">Year to date</div>
+              <div className="text-sm text-gray-400 font-rajdhani">Year to date</div>
             </div>
 
             {/* Net Profit */}
-            <div className={`bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100 group`}>
+            <div className={`bg-white/5 backdrop-blur-xl rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-white/10 group`}>
               <div className="flex items-center justify-between mb-4">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 ${
                   financialData.netProfit >= 0
@@ -143,41 +143,41 @@ const PublicFinances: React.FC = () => {
                 <span className="text-2xl font-bold text-white">{formatCurrency(financialData.netProfit)}</span>
               </div>
               <h3 className={`font-orbitron font-bold mb-2 ${financialData.netProfit >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>Net Profit</h3>
-              <div className="text-sm text-gray-500 font-rajdhani">Income - Expenses</div>
+              <div className="text-sm text-gray-400 font-rajdhani">Income - Expenses</div>
             </div>
 
             {/* VAT */}
-            <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100 group">
+            <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-white/10 group">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <PieChart className="h-6 w-6 text-yellow-600" />
                 </div>
-                <span className="text-2xl font-bold text-gray-900">{formatCurrency(financialData.totalVAT)}</span>
+                <span className="text-2xl font-bold text-white">{formatCurrency(financialData.totalVAT)}</span>
               </div>
               <h3 className="text-yellow-600 font-orbitron font-bold mb-2">VAT Collected</h3>
-              <div className="text-sm text-gray-500 font-rajdhani">Year to date</div>
+              <div className="text-sm text-gray-400 font-rajdhani">Year to date</div>
             </div>
           </div>
 
           {/* Info Box */}
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100 relative">
-            <button 
+          <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-lg border border-white/10 relative">
+            <button
               onClick={() => setShowInfo(!showInfo)}
               className="absolute top-6 right-6 text-gray-400 hover:text-electric transition-colors"
               aria-label={showInfo ? "Hide information" : "Show information"}
             >
               <Info className="h-5 w-5" />
             </button>
-            
-            <h3 className="text-2xl font-orbitron font-bold mb-4 text-gray-900">Our Financial Commitment</h3>
-            
-            <p className="text-gray-600 font-rajdhani mb-4 leading-relaxed">
+
+            <h3 className="text-2xl font-orbitron font-bold mb-4 text-white">Our Financial Commitment</h3>
+
+            <p className="text-gray-300 font-rajdhani mb-4 leading-relaxed">
               At MuseFuze Studios, we believe in building trust through transparency. As an independent studio, 
               we're sharing our financial journey with our community and stakeholders.
             </p>
             
             {showInfo && (
-              <div className="mt-6 space-y-4 text-gray-600 font-rajdhani">
+              <div className="mt-6 space-y-4 text-gray-400 font-rajdhani">
                 <p>
                   <strong className="text-electric">Why we share our finances:</strong> We want to build a sustainable 
                   business that creates value for our community, team members, and partners. By sharing our financial 
