@@ -55,13 +55,15 @@ const MyContracts: React.FC = () => {
                 Sign
               </button>
             ) : (
-              <button
-                onClick={() => setView(c)}
-                className="px-4 py-2 bg-gray-700 text-white rounded-lg font-rajdhani"
-              >
-                View
-              </button>
-              <span className="text-green-400 text-sm">Signed</span>
+              <div className="flex flex-col items-end space-y-1">
+                <button
+                  onClick={() => setView(c)}
+                  className="px-4 py-2 bg-gray-700 text-white rounded-lg font-rajdhani"
+                >
+                  View
+                </button>
+                <span className="text-green-400 text-sm">Signed</span>
+              </div>
             )}
           </li>
         ))}

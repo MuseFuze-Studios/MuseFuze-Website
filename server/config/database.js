@@ -365,7 +365,11 @@ async function createTables() {
       )
     `);
 
-
+    await ensureColumn(
+      'user_contracts',
+      'assigned_by',
+      'assigned_by INT NULL'
+    );
     // Contract requests
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS contract_requests (
@@ -382,6 +386,21 @@ async function createTables() {
       )
     `);
 
+    await ensureColumn(
+      'contract_requests',
+      'status',
+      "status ENUM('open','resolved') DEFAULT 'open'"
+    );
+    await ensureColumn(
+      'contract_requests',
+      'resolved_by',
+      'resolved_by INT NULL'
+    );
+    await ensureColumn(
+      'contract_requests',
+      'resolved_at',
+      'resolved_at TIMESTAMP NULL'
+    );
     // Insert default company info if not exists
     await pool.execute(`
       INSERT IGNORE INTO company_info (id, company_name, company_number, vat_registration, utr)
