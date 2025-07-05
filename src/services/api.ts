@@ -101,6 +101,7 @@ export const staffAPI = {
   // Messages
   getMessages: () => api.get('/staff/messages'),
   createMessage: (data: any) => api.post('/staff/messages', data),
+  updateMessage: (id: number, data: any) => api.put(`/staff/messages/${id}`, data),
   getReplies: (postId: number) => api.get(`/staff/messages/${postId}/replies`),
   deleteMessage: (id: number) => api.delete(`/staff/messages/${id}`),
   

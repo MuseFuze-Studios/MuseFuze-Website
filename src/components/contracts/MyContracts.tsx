@@ -31,11 +31,11 @@ const MyContracts: React.FC = () => {
   if (active) {
     return <SignContract contract={active} onDone={() => { setActive(null); load(); }} />;
   }
-
+  
   if (view) {
     return <ViewContract contract={view} onClose={() => setView(null)} />;
   }
-
+        
   return (
     <div className="space-y-6 p-6">
       <h2 className="font-orbitron text-2xl font-bold mb-4">My Contracts</h2>
@@ -61,6 +61,7 @@ const MyContracts: React.FC = () => {
               >
                 View
               </button>
+              <span className="text-green-400 text-sm">Signed</span>
             )}
           </li>
         ))}

@@ -145,6 +145,7 @@ async function createTables() {
         content TEXT NOT NULL,
         authorId INT NOT NULL,
         parentId INT,
+        category VARCHAR(50),
         isEdited BOOLEAN DEFAULT FALSE,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -351,7 +352,7 @@ async function createTables() {
         FOREIGN KEY (template_id) REFERENCES contract_templates(id) ON DELETE CASCADE
       )
     `);
-
+    
     // Contract requests
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS contract_requests (
@@ -363,7 +364,6 @@ async function createTables() {
         FOREIGN KEY (user_contract_id) REFERENCES user_contracts(id) ON DELETE CASCADE
       )
     `);
-
     // Insert default company info if not exists
     await pool.execute(`
       INSERT IGNORE INTO company_info (id, company_name, company_number, vat_registration, utr)
