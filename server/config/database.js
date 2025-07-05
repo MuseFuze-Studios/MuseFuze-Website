@@ -4,14 +4,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export async function ensureColumn(table, column, definition) {
-  const [rows] = await pool.execute(
-    `SHOW COLUMNS FROM \`${table}\` LIKE ?`,
-    [column]
+  const [rows] = await pool.query(
+    `SHOW COLUMNS FROM \`${table}\` LIKE '${column}'`
   );
   if (rows.length === 0) {
     await pool.execute(`ALTER TABLE \`${table}\` ADD COLUMN ${definition}`);
   }
 }
+
 
 const DB_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
