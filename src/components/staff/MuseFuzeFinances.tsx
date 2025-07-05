@@ -607,6 +607,8 @@ Date:      _______________________
     );
   }
 
+  const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
+
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
