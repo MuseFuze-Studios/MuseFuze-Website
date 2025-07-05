@@ -362,8 +362,12 @@ async function createTables() {
         user_contract_id INT NOT NULL,
         type ENUM('amend','appeal','leave') NOT NULL,
         message TEXT,
+        status ENUM('open','resolved') DEFAULT 'open',
+        resolved_by INT,
+        resolved_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_contract_id) REFERENCES user_contracts(id) ON DELETE CASCADE
+        FOREIGN KEY (user_contract_id) REFERENCES user_contracts(id) ON DELETE CASCADE,
+        FOREIGN KEY (resolved_by) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
     // Insert default company info if not exists

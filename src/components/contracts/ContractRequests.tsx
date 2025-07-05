@@ -25,6 +25,15 @@ const ContractRequests: React.FC = () => {
     }
   };
 
+  const resolve = async (id: number) => {
+    try {
+      await contractAPI.resolveRequest(id);
+      await load();
+    } catch (err) {
+      console.error('Failed to resolve request', err);
+    }
+  };
+
   useEffect(() => { load(); }, []);
 
   return (
@@ -38,8 +47,16 @@ const ContractRequests: React.FC = () => {
               {r.firstName} {r.lastName} - {r.type}
             </div>
             {r.message && <p className="mt-2 text-gray-300">{r.message}</p>}
-            <div className="text-xs text-gray-500">
-              {new Date(r.created_at).toLocaleString()}
+            <div className="flex justify-between items-end mt-2">
+              <span className="text-xs text-gray-500">
+                {new Date(r.created_at).toLocaleString()}
+              </span>
+              <button
+                onClick={() => resolve(r.id)}
+                className="text-sm text-blue-400 hover:underline"
+              >
+                Resolve
+              </button>
             </div>
           </li>
         ))}

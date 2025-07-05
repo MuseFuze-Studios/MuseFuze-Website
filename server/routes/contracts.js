@@ -184,11 +184,12 @@ router.get('/requests', authenticateToken, requireAdmin, async (req, res) => {
         FROM contract_requests cr
         JOIN user_contracts uc ON cr.user_contract_id = uc.id
         JOIN users u ON uc.user_id = u.id
-        JOIN contract_templates ct ON uc.template_id = ct.id`;
+        JOIN contract_templates ct ON uc.template_id = ct.id
+        WHERE cr.status='open'`;
     const params = [];
 
     if (req.user.role === 'admin') {
-      query += ' WHERE uc.assigned_by = ?';
+      query += ' AND uc.assigned_by = ?';
       params.push(req.user.id);
     }
 
@@ -202,4 +203,54 @@ router.get('/requests', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [rows] = await pool.execute(
+      `SELECT cr.status, uc.user_id
+         FROM contract_requests cr
+         JOIN user_contracts uc ON cr.user_contract_id = uc.id
+        WHERE cr.id=?`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    const request = rows[0];
+
+    if (request.status === 'resolved') {
+      return res.json({ message: 'Already resolved' });
+    }
+
+    if (
+      req.user.role === 'staff' &&
+      req.user.id !== request.user_id
+    ) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    if (
+      req.user.role !== 'staff' &&
+      req.user.role !== 'admin' &&
+      req.user.role !== 'ceo'
+    ) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    await pool.execute(
+      `UPDATE contract_requests
+          SET status='resolved', resolved_by=?, resolved_at=NOW()
+        WHERE id=?`,
+      [req.user.id, id]
+    );
+
+    res.json({ message: 'Request resolved' });
+  } catch (err) {
+    console.error('Resolve contract request error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 export default router;
