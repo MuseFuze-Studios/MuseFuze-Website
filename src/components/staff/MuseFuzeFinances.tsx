@@ -601,6 +601,12 @@ Date:      _______________________
       estimatedCorpTax: corpTax
     };
   }, [transactions, budgets]);
+  
+  const getBudgetUsageColor = (percentage: number) => {
+    if (percentage >= 90) return 'text-red-400 bg-red-900/30';
+    if (percentage >= 75) return 'text-yellow-400 bg-yellow-900/30';
+    return 'text-green-400 bg-green-900/30';
+  };
 
   const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
 

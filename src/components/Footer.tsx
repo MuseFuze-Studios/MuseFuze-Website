@@ -42,7 +42,7 @@ const Footer = () => {
                 <Twitter className="h-5 w-5" />
               </a>
               <a
-                href="mailto:hello@musefuze.com"
+                href="mailto:admin@musefuzestudios.com"
                 className="w-10 h-10 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-all duration-200"
                 aria-label="Email"
               >

@@ -239,7 +239,7 @@ const CookiesPolicyPage: React.FC = () => {
               </p>
               <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10">
                 <p className="text-electric font-rajdhani">
-                  Email: privacy@musefuze.com<br />
+                  Email: admin@musefuzestudios.com<br />
                   Subject: Cookie Policy Inquiry<br />
                   Response Time: Within 48 hours
                 </p>
