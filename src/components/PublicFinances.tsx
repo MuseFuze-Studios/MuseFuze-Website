@@ -74,10 +74,10 @@ const PublicFinances: React.FC = () => {
   // Show loading state
   if (loading) {
     return (
-      <section id="finances" className="py-24 bg-gray-50">
+      <section id="finances" className="py-24 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-gray-900">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-white">
               Financial Transparency
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-electric to-neon mx-auto mb-8"></div>
@@ -91,14 +91,14 @@ const PublicFinances: React.FC = () => {
   }
 
   return (
-    <section id="finances" className="py-24 bg-gray-50">
+    <section id="finances" className="py-24 bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-gray-900">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-white">
             Financial Transparency
           </h2>
           <div className="w-24 h-1 bg-gradient-to-r from-electric to-neon mx-auto mb-8"></div>
-          <p className="text-xl font-rajdhani text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl font-rajdhani text-gray-300 max-w-3xl mx-auto">
             We believe in transparency. As an independent studio, we're committed to sharing our financial journey with our community.
           </p>
         </div>
@@ -134,13 +134,13 @@ const PublicFinances: React.FC = () => {
             <div className={`bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100 group`}>
               <div className="flex items-center justify-between mb-4">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 ${
-                  financialData.netProfit >= 0 
-                    ? 'bg-gradient-to-br from-blue-500/10 to-blue-600/10' 
+                  financialData.netProfit >= 0
+                    ? 'bg-gradient-to-br from-blue-500/10 to-blue-600/10'
                     : 'bg-gradient-to-br from-orange-500/10 to-orange-600/10'
                 }`}>
                   <DollarSign className={`h-6 w-6 ${financialData.netProfit >= 0 ? 'text-blue-600' : 'text-orange-600'}`} />
                 </div>
-                <span className="text-2xl font-bold text-gray-900">{formatCurrency(financialData.netProfit)}</span>
+                <span className="text-2xl font-bold text-white">{formatCurrency(financialData.netProfit)}</span>
               </div>
               <h3 className={`font-orbitron font-bold mb-2 ${financialData.netProfit >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>Net Profit</h3>
               <div className="text-sm text-gray-500 font-rajdhani">Income - Expenses</div>
