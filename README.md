@@ -23,6 +23,7 @@ A modern, full-stack web application for MuseFuze Studios featuring user authent
 - **Message Board** - Team communication and collaboration
 - **Playtest Sessions** - Schedule and manage testing sessions
 - **Download History** - Track build downloads and usage
+- **Contracts** - View, sign and manage legally binding agreements
 
 ### Admin Features
 - **User Management** - Manage user accounts and roles
@@ -30,6 +31,12 @@ A modern, full-stack web application for MuseFuze Studios featuring user authent
 - **Finance Tracking** - Budget management and expense tracking
 - **System Monitoring** - Server health and system logs
 - **Feature Toggles** - Control experimental features
+
+### Contract Management
+- Assign contracts based on templates
+- Digital signing with name, IP and timestamp logging
+- Users can request amendments, appeals or to leave a contract
+- Staff review requests and archive or update contracts accordingly
 
 ## 🛠️ Tech Stack
 
