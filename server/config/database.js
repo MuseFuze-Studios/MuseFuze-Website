@@ -324,6 +324,46 @@ async function createTables() {
       )
     `);
 
+    // Contract templates
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS contract_templates (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        created_by INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    // User contracts
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS user_contracts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        template_id INT NOT NULL,
+        status ENUM('pending','signed') DEFAULT 'pending',
+        signed_at TIMESTAMP NULL,
+        signed_name VARCHAR(255),
+        signed_ip VARCHAR(45),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (template_id) REFERENCES contract_templates(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Contract requests
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS contract_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_contract_id INT NOT NULL,
+        type ENUM('amend','appeal','leave') NOT NULL,
+        message TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_contract_id) REFERENCES user_contracts(id) ON DELETE CASCADE
+      )
+    `);
+
     // Insert default company info if not exists
     await pool.execute(`
       INSERT IGNORE INTO company_info (id, company_name, company_number, vat_registration, utr)

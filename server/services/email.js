@@ -17,14 +17,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-interface EmailOptions {
-  to: string;
-  subject: string;
-  html: string;
-}
-
-export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  const mail: EmailOptions = {
+export async function sendEmail(to, subject, html) {
+  const mail = {
     to,
     subject,
     html,
@@ -48,7 +42,7 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   }
 }
 
-async function logEmailSend(email: string, type: string, success: boolean) {
+async function logEmailSend(email, type, success) {
   try {
     if (!pool) return;
     await pool.execute(
@@ -60,7 +54,7 @@ async function logEmailSend(email: string, type: string, success: boolean) {
   }
 }
 
-export async function sendWelcomeEmail(user: { email: string; firstName: string }): Promise<boolean> {
+export async function sendWelcomeEmail(user) {
   try {
     const templatePath = path.join(process.cwd(), 'emails', 'welcome.html');
     const templateSource = await fs.readFile(templatePath, 'utf-8');

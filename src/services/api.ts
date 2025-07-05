@@ -135,6 +135,21 @@ export const staffAPI = {
   },
 };
 
+// Contract API
+export const contractAPI = {
+  createTemplate: (data: { title: string; content: string }) =>
+    api.post('/contracts/templates', data),
+  getTemplates: () => api.get('/contracts/templates'),
+  assignContract: (data: { userId: number; templateId: number }) =>
+    api.post('/contracts/assign', data),
+  getUserContracts: () => api.get('/contracts/user'),
+  getUserContractsAdmin: (userId: number) => api.get(`/contracts/user/${userId}`),
+  signContract: (id: number, fullName: string) =>
+    api.post(`/contracts/sign/${id}`, { fullName }),
+  requestChange: (data: { contractId: number; type: string; message: string }) =>
+    api.post('/contracts/request', data),
+};
+
 // Admin API
 export const adminAPI = {
   getUsers: () => api.get('/admin/users'),
