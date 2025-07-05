@@ -18,7 +18,6 @@ const HomePage: React.FC = () => {
         <Shop />
         <PublicFinances />
         <Team />
-        <JoinUs />
       </main>
       <Footer />
     </div>
