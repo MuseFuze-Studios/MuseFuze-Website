@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-async function ensureColumn(table, column, definition) {
+export async function ensureColumn(table, column, definition) {
   const [rows] = await pool.execute(
     `SHOW COLUMNS FROM \`${table}\` LIKE ?`,
     [column]
@@ -370,7 +370,6 @@ async function createTables() {
       'assigned_by',
       'assigned_by INT NULL'
     );
-
     // Contract requests
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS contract_requests (

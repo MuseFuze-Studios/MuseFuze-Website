@@ -1,6 +1,6 @@
 import express from 'express';
 import handlebars from 'handlebars';
-import { pool } from '../config/database.js';
+import { pool, ensureColumn } from '../config/database.js';
 import { authenticateToken, requireAdmin, requireStaff } from '../middleware/auth.js';
 import { sendEmail } from '../services/email.js';
 
@@ -176,6 +176,10 @@ router.post('/request', authenticateToken, requireStaff, async (req, res) => {
 // List contract requests for admin/ceo
 router.get('/requests', authenticateToken, requireAdmin, async (req, res) => {
   try {
+    await ensureColumn('user_contracts', 'assigned_by', 'INT NULL');
+    await ensureColumn('contract_requests', 'status', "ENUM('open','resolved') DEFAULT 'open'");
+    await ensureColumn('contract_requests', 'resolved_by', 'INT NULL');
+    await ensureColumn('contract_requests', 'resolved_at', 'TIMESTAMP NULL');
     let query = `
       SELECT cr.id, cr.type, cr.message, cr.created_at,
              uc.id AS contract_id, uc.user_id, uc.assigned_by,
@@ -206,6 +210,9 @@ router.get('/requests', authenticateToken, requireAdmin, async (req, res) => {
 router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    await ensureColumn('contract_requests', 'status', "ENUM('open','resolved') DEFAULT 'open'");
+    await ensureColumn('contract_requests', 'resolved_by', 'INT NULL');
+    await ensureColumn('contract_requests', 'resolved_at', 'TIMESTAMP NULL');
 
     const [rows] = await pool.execute(
       `SELECT cr.status, uc.user_id
