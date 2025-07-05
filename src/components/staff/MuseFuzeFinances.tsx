@@ -637,30 +637,43 @@ Date:      _______________________
         </div>
       </div>
 
-      {/* HMRC Tax Reports Section */}
-      <div className="mb-8 bg-gray-800/30 rounded-xl p-6 border border-gray-700">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-white flex items-center">
-            <FileText className="h-5 w-5 mr-2 text-amber-400" />
-            HMRC Tax Reports
-          </h3>
-          <div className="flex space-x-2 flex-wrap gap-2">
-            <button
-              onClick={() => generateTaxReport('vat')}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm"
-            >
-              Generate VAT Report
-            </button>
-            <button
-              onClick={() => generateTaxReport('corporation_tax')}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm"
-            >
-              Generate Corporation Tax
-            </button>
+      {/* Tax Reports and Company Info */}
+      <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2 bg-gray-800/30 rounded-xl p-6 border border-gray-700">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold text-white flex items-center">
+              <FileText className="h-5 w-5 mr-2 text-amber-400" />
+              HMRC Tax Reports
+            </h3>
+            <div className="flex space-x-2 flex-wrap gap-2">
+              <button
+                onClick={() => generateTaxReport('vat')}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm"
+              >
+                Generate VAT Report
+              </button>
+              <button
+                onClick={() => generateTaxReport('corporation_tax')}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm"
+              >
+                Generate Corporation Tax
+              </button>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-amber-900/20 p-4 rounded-lg border border-amber-500/30">
+              <h4 className="text-amber-300 font-medium mb-2">VAT Quarter</h4>
+              <p className="text-white text-lg font-bold">£{totalVAT.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+              <p className="text-gray-400 text-sm">VAT to declare</p>
+            </div>
+            <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/30">
+              <h4 className="text-blue-300 font-medium mb-2">Corporation Tax</h4>
+              <p className="text-white text-lg font-bold">£{estimatedCorpTax.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+              <p className="text-gray-400 text-sm">Estimated (19%)</p>
+            </div>
           </div>
         </div>
-        
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="space-y-6">
           <div className="bg-gray-800/30 p-4 rounded-lg border border-gray-600">
             <h4 className="text-white font-medium mb-2">Company Details</h4>
             <p className="text-gray-300 text-sm">Name: {companyInfo?.company_name || 'MuseFuze Studios Ltd'}</p>
@@ -668,22 +681,7 @@ Date:      _______________________
             <p className="text-gray-300 text-sm">VAT Reg: {companyInfo?.vat_registration || 'GB987654321'}</p>
             <p className="text-gray-300 text-sm">UTR: {companyInfo?.utr || '1234567890'}</p>
           </div>
-          
-          <div className="bg-amber-900/20 p-4 rounded-lg border border-amber-500/30">
-            <h4 className="text-amber-300 font-medium mb-2">VAT Quarter</h4>
-            <p className="text-white text-lg font-bold">£{totalVAT.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-            <p className="text-gray-400 text-sm">VAT to declare</p>
-          </div>
-          
-          <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/30">
-            <h4 className="text-blue-300 font-medium mb-2">Corporation Tax</h4>
-            <p className="text-white text-lg font-bold">£{estimatedCorpTax.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-            <p className="text-gray-400 text-sm">Estimated (19%)</p>
-          </div>
-        </div>
-        
-        <div className="mt-4">
-          <div className="bg-green-900/20 p-4 rounded-lg border border-green-500/30 w-full">
+          <div className="bg-green-900/20 p-4 rounded-lg border border-green-500/30">
             <h4 className="text-green-300 font-medium mb-2">Next Deadline</h4>
             <p className="text-white text-lg font-bold">31 Jan 2026</p>
             <p className="text-gray-400 text-sm">VAT Return</p>
