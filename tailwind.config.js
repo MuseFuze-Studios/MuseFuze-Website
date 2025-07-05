@@ -4,6 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        'inter': ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         'orbitron': ['Orbitron', 'monospace'],
         'rajdhani': ['Rajdhani', 'sans-serif'],
       },
