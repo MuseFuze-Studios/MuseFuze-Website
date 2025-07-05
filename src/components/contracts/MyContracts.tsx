@@ -1,0 +1,61 @@
+import React, { useEffect, useState } from 'react';
+import { contractAPI } from '../../services/api';
+import SignContract from './SignContract';
+
+interface Contract {
+  id: number;
+  title: string;
+  status: string;
+  content: string;
+  signed_at: string | null;
+  signed_name?: string;
+}
+
+const MyContracts: React.FC = () => {
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [active, setActive] = useState<Contract | null>(null);
+
+  const load = async () => {
+    try {
+      const res = await contractAPI.getUserContracts();
+      setContracts(res.data);
+    } catch (err) {
+      console.error('Failed to load contracts', err);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  if (active) {
+    return <SignContract contract={active} onDone={() => { setActive(null); load(); }} />;
+  }
+
+  return (
+    <div className="space-y-6 p-6">
+      <h2 className="font-orbitron text-2xl font-bold mb-4">My Contracts</h2>
+      {contracts.length === 0 && <p className="text-gray-400">No contracts assigned.</p>}
+      <ul className="space-y-4">
+        {contracts.map(c => (
+          <li key={c.id} className="border border-gray-700 rounded-xl p-4 flex justify-between items-center">
+            <div>
+              <h3 className="font-rajdhani font-bold text-white">{c.title}</h3>
+              <p className="text-gray-400 text-sm">Status: {c.status}</p>
+            </div>
+            {c.status === 'pending' ? (
+              <button
+                onClick={() => setActive(c)}
+                className="px-4 py-2 bg-gradient-to-r from-electric to-neon text-black rounded-lg font-rajdhani font-bold"
+              >
+                Sign
+              </button>
+            ) : (
+              <span className="text-green-400 text-sm">Signed</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+export default MyContracts;
