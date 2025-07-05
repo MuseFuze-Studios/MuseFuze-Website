@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
 import { Gamepad2, Crosshair, Target, Rocket, Zap } from 'lucide-react';
 import useInView from '../hooks/useInView';
+import PublicFinances from '../components/PublicFinances';
+import Team from '../components/Team';
 
 const ModernHomePage: React.FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -128,6 +130,12 @@ const ModernHomePage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Finances */}
+      <PublicFinances />
+
+      {/* Team */}
+      <Team />
     </div>
   );
 };
