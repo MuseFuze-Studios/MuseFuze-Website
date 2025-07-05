@@ -343,13 +343,15 @@ async function createTables() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         template_id INT NOT NULL,
+        assigned_by INT,
         status ENUM('pending','signed') DEFAULT 'pending',
         signed_at TIMESTAMP NULL,
         signed_name VARCHAR(255),
         signed_ip VARCHAR(45),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (template_id) REFERENCES contract_templates(id) ON DELETE CASCADE
+        FOREIGN KEY (template_id) REFERENCES contract_templates(id) ON DELETE CASCADE,
+        FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
     
