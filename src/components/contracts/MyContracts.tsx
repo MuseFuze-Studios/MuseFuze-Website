@@ -10,6 +10,7 @@ interface Contract {
   content: string;
   signed_at: string | null;
   signed_name?: string;
+  is_active: boolean;
 }
 
 const MyContracts: React.FC = () => {
@@ -45,9 +46,11 @@ const MyContracts: React.FC = () => {
           <li key={c.id} className="border border-gray-700 rounded-xl p-4 flex justify-between items-center">
             <div>
               <h3 className="font-rajdhani font-bold text-white">{c.title}</h3>
-              <p className="text-gray-400 text-sm">Status: {c.status}</p>
+              <p className="text-gray-400 text-sm">
+                Status: {c.status} {c.is_active ? '' : '(inactive)'}
+              </p>
             </div>
-            {c.status === 'pending' ? (
+            {c.status === 'pending' && c.is_active ? (
               <button
                 onClick={() => setActive(c)}
                 className="px-4 py-2 bg-gradient-to-r from-electric to-neon text-black rounded-lg font-rajdhani font-bold"
