@@ -39,8 +39,8 @@ router.post('/assign', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId, templateId } = req.body;
     await pool.execute(
-      'INSERT INTO user_contracts (user_id, template_id) VALUES (?, ?)',
-      [userId, templateId]
+      'INSERT INTO user_contracts (user_id, template_id, assigned_by) VALUES (?, ?, ?)',
+      [userId, templateId, req.user.id]
     );
     res.status(201).json({ message: 'Contract assigned' });
   } catch (err) {
@@ -169,6 +169,35 @@ router.post('/request', authenticateToken, requireStaff, async (req, res) => {
     res.json({ message: 'Request submitted' });
   } catch (err) {
     console.error('Contract request error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// List contract requests for admin/ceo
+router.get('/requests', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    let query = `
+      SELECT cr.id, cr.type, cr.message, cr.created_at,
+             uc.id AS contract_id, uc.user_id, uc.assigned_by,
+             u.firstName, u.lastName,
+             ct.title
+        FROM contract_requests cr
+        JOIN user_contracts uc ON cr.user_contract_id = uc.id
+        JOIN users u ON uc.user_id = u.id
+        JOIN contract_templates ct ON uc.template_id = ct.id`;
+    const params = [];
+
+    if (req.user.role === 'admin') {
+      query += ' WHERE uc.assigned_by = ?';
+      params.push(req.user.id);
+    }
+
+    query += ' ORDER BY cr.created_at DESC';
+
+    const [rows] = await pool.execute(query, params);
+    res.json(rows);
+  } catch (err) {
+    console.error('List contract requests error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
