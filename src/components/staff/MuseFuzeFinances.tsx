@@ -62,6 +62,38 @@ interface TaxReport {
   generated_at: string;
 }
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'approved':
+      return 'text-green-400 bg-green-900/30';
+    case 'pending':
+      return 'text-yellow-400 bg-yellow-900/30';
+    case 'rejected':
+      return 'text-red-400 bg-red-900/30';
+    default:
+      return 'text-gray-400 bg-gray-900/30';
+  }
+};
+
+const getCategoryColor = (category: string) => {
+  const colors: Record<string, string> = {
+    'Software Licenses': 'text-blue-400 bg-blue-900/30',
+    'Marketing & Advertising': 'text-purple-400 bg-purple-900/30',
+    'Hardware & Equipment': 'text-orange-400 bg-orange-900/30',
+    'Professional Services': 'text-green-400 bg-green-900/30',
+    'Development Tools': 'text-violet-400 bg-violet-900/30',
+    'Investment Funding': 'text-emerald-400 bg-emerald-900/30',
+    'Game Sales': 'text-cyan-400 bg-cyan-900/30',
+  };
+  return colors[category] || 'text-gray-400 bg-gray-900/30';
+};
+
+const getBudgetUsageColor = (percentage: number) => {
+  if (percentage >= 90) return 'text-red-400 bg-red-900/30';
+  if (percentage >= 75) return 'text-yellow-400 bg-yellow-900/30';
+  return 'text-green-400 bg-green-900/30';
+};
+
 // Memoized row for rendering recent transactions efficiently
 const TransactionRow: React.FC<{ transaction: Transaction }> = memo(({ transaction }) => (
   <div className="flex justify-between items-center p-4 bg-gray-700/30 rounded-lg">
@@ -533,28 +565,43 @@ Date:      _______________________
     URL.revokeObjectURL(url);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return 'text-green-400 bg-green-900/30';
-      case 'pending': return 'text-yellow-400 bg-yellow-900/30';
-      case 'rejected': return 'text-red-400 bg-red-900/30';
-      default: return 'text-gray-400 bg-gray-900/30';
-    }
-  };
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Software Licenses': 'text-blue-400 bg-blue-900/30',
-      'Marketing & Advertising': 'text-purple-400 bg-purple-900/30',
-      'Hardware & Equipment': 'text-orange-400 bg-orange-900/30',
-      'Professional Services': 'text-green-400 bg-green-900/30',
-      'Development Tools': 'text-violet-400 bg-violet-900/30',
-      'Investment Funding': 'text-emerald-400 bg-emerald-900/30',
-      'Game Sales': 'text-cyan-400 bg-cyan-900/30'
+  // Calculate totals in GBP using memoization to avoid heavy recalculations
+  const {
+    totalIncome,
+    totalExpenses,
+    totalVAT,
+    netIncome,
+    totalBudgetAllocated,
+    totalBudgetSpent,
+    estimatedCorpTax
+  } = useMemo(() => {
+    const income = transactions
+      .filter(t => t.type === 'income' && t.status === 'approved')
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    const expenses = transactions
+      .filter(t => t.type === 'expense' && t.status === 'approved')
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    const vat = transactions
+      .filter(t => t.status === 'approved')
+      .reduce((sum, t) => sum + parseFloat((t.vat_amount || 0).toString()), 0);
+    const net = income - expenses;
+    const budgetAllocated = budgets.reduce((sum, b) => sum + parseFloat(b.allocated.toString()), 0);
+    const budgetSpent = budgets.reduce((sum, b) => sum + parseFloat(b.spent.toString()), 0);
+    const corpTaxRate = 0.19; // 19%
+    const corpTax = Math.max(0, net * corpTaxRate);
+
+    return {
+      totalIncome: income,
+      totalExpenses: expenses,
+      totalVAT: vat,
+      netIncome: net,
+      totalBudgetAllocated: budgetAllocated,
+      totalBudgetSpent: budgetSpent,
+      estimatedCorpTax: corpTax
     };
-    return colors[category as keyof typeof colors] || 'text-gray-400 bg-gray-900/30';
-  };
-
+  }, [transactions, budgets]);
+  
   const getBudgetUsageColor = (percentage: number) => {
     if (percentage >= 90) return 'text-red-400 bg-red-900/30';
     if (percentage >= 75) return 'text-yellow-400 bg-yellow-900/30';
@@ -595,7 +642,7 @@ Date:      _______________________
       estimatedCorpTax: corpTax
     };
   }, [transactions, budgets]);
-
+    
   const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
 
   if (loading) {
