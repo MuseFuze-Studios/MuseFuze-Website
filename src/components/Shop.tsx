@@ -75,23 +75,23 @@ const Shop = () => {
   // If shop is disabled, show unavailable message
   if (!siteConfig.shop.enabled) {
     return (
-      <section id="shop" className="py-24 bg-white">
+      <section id="shop" className="py-24 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-gray-900">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-white">
               Shop
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-electric to-neon mx-auto mb-8"></div>
           </div>
 
           <div className="max-w-2xl mx-auto text-center">
-            <div className="bg-gray-50 rounded-3xl p-12 border border-gray-200">
+            <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-12 border border-white/10">
               <ShoppingBag className="h-16 w-16 text-gray-400 mx-auto mb-6" />
-              <h3 className="text-2xl font-orbitron font-bold mb-4 text-gray-900">Shop Currently Unavailable</h3>
-              <p className="text-xl font-rajdhani text-gray-600 mb-6">
+              <h3 className="text-2xl font-orbitron font-bold mb-4 text-white">Shop Currently Unavailable</h3>
+              <p className="text-xl font-rajdhani text-gray-400 mb-6">
                 Currently, the shop is unavailable :(
               </p>
-              <p className="text-gray-500 font-rajdhani">
+              <p className="text-gray-400 font-rajdhani">
                 We're working hard to bring you some amazing MuseFuze merchandise. Check back soon!
               </p>
             </div>
@@ -102,14 +102,14 @@ const Shop = () => {
   }
 
   return (
-    <section id="shop" className="py-24 bg-white">
+    <section id="shop" className="py-24 bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-gray-900">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-white">
             Shop
           </h2>
           <div className="w-24 h-1 bg-gradient-to-r from-electric to-neon mx-auto mb-8"></div>
-          <p className="text-xl font-rajdhani text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl font-rajdhani text-gray-400 max-w-2xl mx-auto">
             Wear your creativity. Express your rebellion. Rep the MuseFuze movement.
           </p>
         </div>
@@ -121,7 +121,7 @@ const Shop = () => {
               className="group cursor-pointer"
               onClick={() => setSelectedProduct(product)}
             >
-              <div className="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100">
+              <div className="bg-white/5 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-white/10">
                 <div className="aspect-square overflow-hidden">
                   <img
                     src={product.image}
@@ -131,10 +131,10 @@ const Shop = () => {
                 </div>
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-orbitron font-bold text-gray-900">{product.name}</h3>
+                    <h3 className="text-xl font-orbitron font-bold text-white">{product.name}</h3>
                     <span className="text-electric font-rajdhani font-bold text-lg">{product.price}</span>
                   </div>
-                  <p className="text-gray-500 font-rajdhani text-sm">{product.type}</p>
+                  <p className="text-gray-400 font-rajdhani text-sm">{product.type}</p>
                 </div>
               </div>
             </div>
@@ -144,11 +144,11 @@ const Shop = () => {
         {/* Product Modal */}
         {selectedProduct && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-xl z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+            <div className="bg-gray-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-auto text-white border border-white/10">
               <div className="relative">
                 <button
                   onClick={() => setSelectedProduct(null)}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10 bg-white/80 backdrop-blur-sm rounded-full p-2"
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 z-10 bg-gray-800/80 backdrop-blur-sm rounded-full p-2"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -162,9 +162,9 @@ const Shop = () => {
                     />
                   </div>
                   <div className="md:w-1/2 p-8">
-                    <h3 className="text-2xl font-orbitron font-bold mb-2 text-gray-900">{selectedProduct.name}</h3>
+                    <h3 className="text-2xl font-orbitron font-bold mb-2 text-white">{selectedProduct.name}</h3>
                     <p className="text-electric font-rajdhani font-bold text-xl mb-4">{selectedProduct.price}</p>
-                    <p className="text-gray-600 font-rajdhani mb-6">{selectedProduct.description}</p>
+                    <p className="text-gray-400 font-rajdhani mb-6">{selectedProduct.description}</p>
                     
                     <a
                       href={selectedProduct.storeUrl}
