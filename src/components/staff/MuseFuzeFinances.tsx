@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { DollarSign, TrendingUp, TrendingDown, PieChart, Plus, Receipt, Target, FileText, Download, Calculator, AlertTriangle, Building, Settings } from 'lucide-react';
 import { staffAPI } from '../../services/api';
 import { formatCurrency, formatDate, formatPercentage } from '../../utils/formatters';
@@ -61,6 +61,89 @@ interface TaxReport {
   status: 'draft' | 'submitted' | 'accepted' | 'rejected';
   generated_at: string;
 }
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'approved':
+      return 'text-green-400 bg-green-900/30';
+    case 'pending':
+      return 'text-yellow-400 bg-yellow-900/30';
+    case 'rejected':
+      return 'text-red-400 bg-red-900/30';
+    default:
+      return 'text-gray-400 bg-gray-900/30';
+  }
+};
+
+const getCategoryColor = (category: string) => {
+  const colors: Record<string, string> = {
+    'Software Licenses': 'text-blue-400 bg-blue-900/30',
+    'Marketing & Advertising': 'text-purple-400 bg-purple-900/30',
+    'Hardware & Equipment': 'text-orange-400 bg-orange-900/30',
+    'Professional Services': 'text-green-400 bg-green-900/30',
+    'Development Tools': 'text-violet-400 bg-violet-900/30',
+    'Investment Funding': 'text-emerald-400 bg-emerald-900/30',
+    'Game Sales': 'text-cyan-400 bg-cyan-900/30',
+  };
+  return colors[category] || 'text-gray-400 bg-gray-900/30';
+};
+
+const getBudgetUsageColor = (percentage: number) => {
+  if (percentage >= 90) return 'text-red-400 bg-red-900/30';
+  if (percentage >= 75) return 'text-yellow-400 bg-yellow-900/30';
+  return 'text-green-400 bg-green-900/30';
+};
+
+// Memoized row for rendering recent transactions efficiently
+const TransactionRow: React.FC<{ transaction: Transaction }> = memo(({ transaction }) => (
+  <div className="flex justify-between items-center p-4 bg-gray-700/30 rounded-lg">
+    <div className="flex-1">
+      <div className="flex items-center space-x-3 mb-2">
+        <span className={`px-2 py-1 rounded text-sm font-medium ${getCategoryColor(transaction.category)}`}>{transaction.category}</span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>{transaction.status.toUpperCase()}</span>
+        {transaction.vat_amount > 0 && (
+          <span className="px-2 py-1 bg-yellow-900/30 text-yellow-300 rounded text-xs">
+            VAT: £{(Number(transaction.vat_amount) || 0).toFixed(2)}
+          </span>
+        )}
+      </div>
+      <h4 className="text-white font-medium">{transaction.description}</h4>
+      <p className="text-gray-400 text-sm">{transaction.justification}</p>
+      <div className="text-xs text-gray-500 mt-1">
+        By {transaction.responsible_staff} • {new Date(transaction.date).toLocaleDateString()}
+        {transaction.hmrc_category && (<span className="ml-2">• HMRC: {transaction.hmrc_category}</span>)}
+      </div>
+    </div>
+    <div className="text-right">
+      <div className={`text-xl font-bold ${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>{transaction.type === 'income' ? '+' : '-'}£{parseFloat(transaction.amount.toString()).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+      <div className="text-xs text-gray-400">
+        {transaction.currency} • {parseFloat(transaction.vat_rate.toString())}% VAT
+        {transaction.vat_amount > 0 && ` (£${parseFloat(transaction.vat_amount.toString()).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
+ </div>
+ </div>
+ </div>
+));
+
+// Memoized row for displaying forecast entries
+const ForecastRow: React.FC<{ forecast: Forecast }> = memo(({ forecast }) => (
+  <div className="flex justify-between items-center">
+    <span className="text-gray-300">{forecast.month}</span>
+    <div className="flex items-center space-x-4">
+      <div className="text-right">
+        <div className="text-blue-400 text-sm">Est: £{forecast.estimated.toLocaleString()}</div>
+        {forecast.actual > 0 && (
+          <div className="text-white text-sm">Act: £{forecast.actual.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        )}
+      </div>
+      <div className="w-24 bg-gray-700 rounded-full h-2">
+        <div
+          className="bg-blue-500 h-2 rounded-full"
+          style={{ width: `${Number(forecast.actual || 0) > 0 ? Math.min((Number(forecast.actual || 0) / Number(forecast.estimated || 1)) * 100, 100) : 0}%` }}
+        ></div>
+      </div>
+    </div>
+  </div>
+));
 
 const MuseFuzeFinances: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -482,45 +565,44 @@ Date:      _______________________
     URL.revokeObjectURL(url);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return 'text-green-400 bg-green-900/30';
-      case 'pending': return 'text-yellow-400 bg-yellow-900/30';
-      case 'rejected': return 'text-red-400 bg-red-900/30';
-      default: return 'text-gray-400 bg-gray-900/30';
-    }
-  };
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Software Licenses': 'text-blue-400 bg-blue-900/30',
-      'Marketing & Advertising': 'text-purple-400 bg-purple-900/30',
-      'Hardware & Equipment': 'text-orange-400 bg-orange-900/30',
-      'Professional Services': 'text-green-400 bg-green-900/30',
-      'Development Tools': 'text-violet-400 bg-violet-900/30',
-      'Investment Funding': 'text-emerald-400 bg-emerald-900/30',
-      'Game Sales': 'text-cyan-400 bg-cyan-900/30'
+  // Calculate totals in GBP using memoization to avoid heavy recalculations
+  const {
+    totalIncome,
+    totalExpenses,
+    totalVAT,
+    netIncome,
+    totalBudgetAllocated,
+    totalBudgetSpent,
+    estimatedCorpTax
+  } = useMemo(() => {
+    const income = transactions
+      .filter(t => t.type === 'income' && t.status === 'approved')
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    const expenses = transactions
+      .filter(t => t.type === 'expense' && t.status === 'approved')
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    const vat = transactions
+      .filter(t => t.status === 'approved')
+      .reduce((sum, t) => sum + parseFloat((t.vat_amount || 0).toString()), 0);
+    const net = income - expenses;
+    const budgetAllocated = budgets.reduce((sum, b) => sum + parseFloat(b.allocated.toString()), 0);
+    const budgetSpent = budgets.reduce((sum, b) => sum + parseFloat(b.spent.toString()), 0);
+    const corpTaxRate = 0.19; // 19%
+    const corpTax = Math.max(0, net * corpTaxRate);
+
+    return {
+      totalIncome: income,
+      totalExpenses: expenses,
+      totalVAT: vat,
+      netIncome: net,
+      totalBudgetAllocated: budgetAllocated,
+      totalBudgetSpent: budgetSpent,
+      estimatedCorpTax: corpTax
     };
-    return colors[category as keyof typeof colors] || 'text-gray-400 bg-gray-900/30';
-  };
+  }, [transactions, budgets]);
 
-  const getBudgetUsageColor = (percentage: number) => {
-    if (percentage >= 90) return 'text-red-400 bg-red-900/30';
-    if (percentage >= 75) return 'text-yellow-400 bg-yellow-900/30';
-    return 'text-green-400 bg-green-900/30';
-  };
-
-  // Calculate totals in GBP
-  const totalIncome = transactions.filter(t => t.type === 'income' && t.status === 'approved').reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
-  const totalExpenses = transactions.filter(t => t.type === 'expense' && t.status === 'approved').reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
-  const totalVAT = transactions.filter(t => t.status === 'approved').reduce((sum, t) => sum + parseFloat((t.vat_amount || 0).toString()), 0);
-  const netIncome = totalIncome - totalExpenses;
-  const totalBudgetAllocated = budgets.reduce((sum, b) => sum + parseFloat(b.allocated.toString()), 0);
-  const totalBudgetSpent = budgets.reduce((sum, b) => sum + parseFloat(b.spent.toString()), 0);
-  
-  // Calculate corporation tax (19%)
-  const corpTaxRate = 0.19;
-  const estimatedCorpTax = Math.max(0, netIncome * corpTaxRate);
+  const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
 
   if (loading) {
     return (
@@ -637,30 +719,43 @@ Date:      _______________________
         </div>
       </div>
 
-      {/* HMRC Tax Reports Section */}
-      <div className="mb-8 bg-gray-800/30 rounded-xl p-6 border border-gray-700">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-white flex items-center">
-            <FileText className="h-5 w-5 mr-2 text-amber-400" />
-            HMRC Tax Reports
-          </h3>
-          <div className="flex space-x-2 flex-wrap gap-2">
-            <button
-              onClick={() => generateTaxReport('vat')}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm"
-            >
-              Generate VAT Report
-            </button>
-            <button
-              onClick={() => generateTaxReport('corporation_tax')}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm"
-            >
-              Generate Corporation Tax
-            </button>
+      {/* Tax Reports and Company Info */}
+      <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2 bg-gray-800/30 rounded-xl p-6 border border-gray-700">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold text-white flex items-center">
+              <FileText className="h-5 w-5 mr-2 text-amber-400" />
+              HMRC Tax Reports
+            </h3>
+            <div className="flex space-x-2 flex-wrap gap-2">
+              <button
+                onClick={() => generateTaxReport('vat')}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm"
+              >
+                Generate VAT Report
+              </button>
+              <button
+                onClick={() => generateTaxReport('corporation_tax')}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm"
+              >
+                Generate Corporation Tax
+              </button>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-amber-900/20 p-4 rounded-lg border border-amber-500/30">
+              <h4 className="text-amber-300 font-medium mb-2">VAT Quarter</h4>
+              <p className="text-white text-lg font-bold">£{totalVAT.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+              <p className="text-gray-400 text-sm">VAT to declare</p>
+            </div>
+            <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/30">
+              <h4 className="text-blue-300 font-medium mb-2">Corporation Tax</h4>
+              <p className="text-white text-lg font-bold">£{estimatedCorpTax.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+              <p className="text-gray-400 text-sm">Estimated (19%)</p>
+            </div>
           </div>
         </div>
-        
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="space-y-6">
           <div className="bg-gray-800/30 p-4 rounded-lg border border-gray-600">
             <h4 className="text-white font-medium mb-2">Company Details</h4>
             <p className="text-gray-300 text-sm">Name: {companyInfo?.company_name || 'MuseFuze Studios Ltd'}</p>
@@ -668,22 +763,7 @@ Date:      _______________________
             <p className="text-gray-300 text-sm">VAT Reg: {companyInfo?.vat_registration || 'GB987654321'}</p>
             <p className="text-gray-300 text-sm">UTR: {companyInfo?.utr || '1234567890'}</p>
           </div>
-          
-          <div className="bg-amber-900/20 p-4 rounded-lg border border-amber-500/30">
-            <h4 className="text-amber-300 font-medium mb-2">VAT Quarter</h4>
-            <p className="text-white text-lg font-bold">£{totalVAT.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-            <p className="text-gray-400 text-sm">VAT to declare</p>
-          </div>
-          
-          <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/30">
-            <h4 className="text-blue-300 font-medium mb-2">Corporation Tax</h4>
-            <p className="text-white text-lg font-bold">£{estimatedCorpTax.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-            <p className="text-gray-400 text-sm">Estimated (19%)</p>
-          </div>
-        </div>
-        
-        <div className="mt-4">
-          <div className="bg-green-900/20 p-4 rounded-lg border border-green-500/30 w-full">
+          <div className="bg-green-900/20 p-4 rounded-lg border border-green-500/30">
             <h4 className="text-green-300 font-medium mb-2">Next Deadline</h4>
             <p className="text-white text-lg font-bold">31 Jan 2026</p>
             <p className="text-gray-400 text-sm">VAT Return</p>
@@ -761,23 +841,7 @@ Date:      _______________________
           <div className="space-y-4">
             {forecasts.length > 0 ? (
               forecasts.map((forecast, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span className="text-gray-300">{forecast.month}</span>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <div className="text-blue-400 text-sm">Est: £{forecast.estimated.toLocaleString()}</div>
-                      {forecast.actual > 0 && (
-                        <div className="text-white text-sm">Act: £{forecast.actual.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                      )}
-                    </div>
-                    <div className="w-24 bg-gray-700 rounded-full h-2">
-                      <div
-                        className="bg-blue-500 h-2 rounded-full"
-                        style={{ width: `${Number(forecast.actual || 0) > 0 ? Math.min((Number(forecast.actual || 0) / Number(forecast.estimated || 1)) * 100, 100) : 0}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
+                <ForecastRow key={index} forecast={forecast} />
               ))
             ) : (
               <div className="text-center py-8">
@@ -797,44 +861,9 @@ Date:      _______________________
         </h3>
         
         <div className="space-y-4">
-          {transactions.length > 0 ? (
-            transactions.slice(0, 5).map((transaction) => (
-              <div key={transaction.id} className="flex justify-between items-center p-4 bg-gray-700/30 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <span className={`px-2 py-1 rounded text-sm font-medium ${getCategoryColor(transaction.category)}`}>
-                      {transaction.category}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
-                      {transaction.status.toUpperCase()}
-                    </span>
-                    {transaction.vat_amount > 0 && (
-                      <span className="px-2 py-1 bg-yellow-900/30 text-yellow-300 rounded text-xs">
-                        VAT: £{(Number(transaction.vat_amount) || 0).toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                  <h4 className="text-white font-medium">{transaction.description}</h4>
-                  <p className="text-gray-400 text-sm">{transaction.justification}</p>
-                  <div className="text-xs text-gray-500 mt-1">
-                    By {transaction.responsible_staff} • {new Date(transaction.date).toLocaleDateString()}
-                    {transaction.hmrc_category && (
-                      <span className="ml-2">• HMRC: {transaction.hmrc_category}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className={`text-xl font-bold ${
-                    transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    {transaction.type === 'income' ? '+' : '-'}£{parseFloat(transaction.amount.toString()).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {transaction.currency} • {parseFloat(transaction.vat_rate.toString())}% VAT
-                    {transaction.vat_amount > 0 && ` (£${parseFloat(transaction.vat_amount.toString()).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})})`}
-                  </div>
-                </div>
-              </div>
+          {recentTransactions.length > 0 ? (
+            recentTransactions.map((transaction) => (
+              <TransactionRow key={transaction.id} transaction={transaction} />
             ))
           ) : (
             <div className="text-center py-8">
