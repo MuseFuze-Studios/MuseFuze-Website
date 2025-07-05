@@ -37,6 +37,7 @@ A modern, full-stack web application for MuseFuze Studios featuring user authent
 - Digital signing with name, IP and timestamp logging
 - Users can request amendments, appeals or to leave a contract
 - Staff review requests and archive or update contracts accordingly
+- Amendments generate new versions and a diff viewer highlights changes
 
 ## 🛠️ Tech Stack
 

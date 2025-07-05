@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { contractAPI } from '../../services/api';
+import ContractDiff from './ContractDiff';
 
 interface Props {
   contract: { id: number; title: string; content: string };
@@ -10,6 +11,17 @@ const SignContract: React.FC<Props> = ({ contract, onDone }) => {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [diff, setDiff] = useState<{ old: string; new: string } | null>(null);
+  const [showDiff, setShowDiff] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await contractAPI.getDiff(contract.id);
+        if (res.data.old) setDiff(res.data);
+      } catch {}
+    })();
+  }, [contract.id]);
 
   const handleSign = async () => {
     setLoading(true);
@@ -27,7 +39,19 @@ const SignContract: React.FC<Props> = ({ contract, onDone }) => {
   return (
     <div className="p-6 space-y-6">
       <h2 className="font-orbitron text-2xl font-bold mb-4">{contract.title}</h2>
-      <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: contract.content }} />
+      {diff && (
+        <button
+          onClick={() => setShowDiff(!showDiff)}
+          className="text-sm text-blue-400 underline"
+        >
+          {showDiff ? 'View Contract' : 'View Changes'}
+        </button>
+      )}
+      {showDiff && diff ? (
+        <ContractDiff oldText={diff.old} newText={diff.new} />
+      ) : (
+        <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: contract.content }} />
+      )}
       <div className="space-y-4">
         <input
           type="text"

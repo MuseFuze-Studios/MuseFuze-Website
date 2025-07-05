@@ -151,8 +151,12 @@ export const contractAPI = {
     api.post('/contracts/request', data),
   getRequests: (type?: string) =>
     api.get('/contracts/requests', { params: type ? { type } : {} }),
-  resolveRequest: (id: number, data: { outcome: string; notes: string }) =>
-    api.post(`/contracts/requests/${id}/resolve`, data),
+  getRequest: (id: number) => api.get(`/contracts/requests/${id}`),
+  resolveRequest: (
+    id: number,
+    data: { outcome: string; notes: string; newContent?: string }
+  ) => api.post(`/contracts/requests/${id}/resolve`, data),
+  getDiff: (id: number) => api.get(`/contracts/${id}/diff`),
 };
 
 // Admin API

@@ -183,6 +183,24 @@ router.get('/:id/history', authenticateToken, async (req, res) => {
   }
 });
 
+router.get('/:id/diff', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.execute(
+      `SELECT message FROM contract_logs
+        WHERE user_contract_id=? AND action='amended'
+        ORDER BY created_at DESC LIMIT 1`,
+      [id]
+    );
+    if (!rows.length) {
+      return res.json({});
+    }
+    res.json(JSON.parse(rows[0].message));
+  } catch (err) {
+    console.error('Get contract diff error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 // Request contract change
 router.post('/request', authenticateToken, requireStaff, async (req, res) => {
   try {
@@ -250,6 +268,30 @@ router.get('/requests', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+router.get('/requests/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.execute(
+      `SELECT cr.id, cr.type, cr.message, cr.created_at, cr.status, cr.outcome, cr.notes,
+              uc.id AS contract_id, uc.status AS contract_status, uc.signed_at,
+              uc.signed_name, uc.signed_ip, uc.assigned_by, uc.user_id,
+              ct.title, ct.content
+         FROM contract_requests cr
+         JOIN user_contracts uc ON cr.user_contract_id = uc.id
+         JOIN contract_templates ct ON uc.template_id = ct.id
+        WHERE cr.id=?`,
+      [id]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Get contract request error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -292,8 +334,7 @@ router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
     ) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-
-    const { outcome = 'approved', notes = '' } = req.body;
+    const { outcome = 'approved', notes = '', newContent } = req.body;
 
     await pool.execute(
       `UPDATE contract_requests
@@ -316,6 +357,26 @@ router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
       );
     }
 
+    if (request.type === 'amend' && outcome === 'approved' && newContent) {
+      const [tplRows] = await pool.execute(
+        'SELECT title, content FROM contract_templates WHERE id=?',
+        [request.template_id]
+      );
+      if (tplRows.length) {
+        const tpl = tplRows[0];
+        const [newTpl] = await pool.execute(
+          'INSERT INTO contract_templates (title, content, created_by) VALUES (?, ?, ?)',
+          [tpl.title, newContent, req.user.id]
+        );
+        const diff = JSON.stringify({ old: tpl.content, new: newContent });
+        await pool.execute(
+          `UPDATE user_contracts SET template_id=?, status='pending', signed_at=NULL, signed_name=NULL, signed_ip=NULL WHERE id=?`,
+          [newTpl.insertId, request.user_contract_id]
+        );
+        await logAction(request.user_contract_id, 'amended', diff, req.user.id, req.ip);
+      }
+    }
+
     await logAction(
       request.user_contract_id,
       `request_${outcome}`,
@@ -323,7 +384,6 @@ router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
       req.user.id,
       req.ip
     );
-
     // notify user
     try {
       const [info] = await pool.execute(
