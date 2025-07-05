@@ -97,49 +97,41 @@ const JoinUs = () => {
   };
 
   const openRoles = [
-  {
-    icon: Code,
-    title: "Web Developer",
-    description: "React, Node.js, and clean code practices"
-  },
-  {
-    icon: Gamepad2,
-    title: "Game Designer",
-    description: "Unity devs with a feel for moment to moment gameplay"
-  },
-  {
-    icon: Palette,
-    title: "UX Designer",
-    description: "Photoshop, Figma, and player-first design mindset"
-  },
-  {
-    icon: Users,
-    title: "3D Artist",
-    description: "Stylized or realistic asset creators using Blender"
-  }
-];
-
+    {
+      icon: Code,
+      title: "Web Developer",
+      description: "React, Node.js, and clean code practices"
+    },
+    {
+      icon: Gamepad2,
+      title: "Game Designer",
+      description: "Unity devs with a feel for moment to moment gameplay"
+    },
+    {
+      icon: Palette,
+      title: "UX Designer",
+      description: "Photoshop, Figma, and player-first design mindset"
+    },
+    {
+      icon: Users,
+      title: "3D Artist",
+      description: "Stylized or realistic asset creators using Blender"
+    }
+  ];
 
   return (
-    <section id="join-us" className="py-20 bg-black relative">
-      {/* Glassmorphism background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-electric/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-neon/5 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-cyber/5 rounded-full blur-3xl"></div>
-      </div>
-      
-      <div className="container mx-auto px-6 relative z-10">
+    <section id="join-us" className="py-24 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-orbitron font-bold mb-6 bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-gray-900">
             Join Us
           </h2>
           <div className="w-24 h-1 bg-gradient-to-r from-electric to-neon mx-auto mb-8"></div>
-          <p className="text-xl font-rajdhani text-gray-200 max-w-3xl mx-auto mb-8">
+          <p className="text-xl font-rajdhani text-gray-700 max-w-3xl mx-auto mb-8 leading-relaxed">
             Ready to push boundaries and create the impossible? We're looking for passionate creators, 
             fearless innovators, and digital rebels who dare to think differently.
           </p>
-          <p className="text-lg font-rajdhani text-gray-300">
+          <p className="text-lg font-rajdhani text-gray-600">
             If you've got the skills and the hunger to change the game, we want to hear from you.
           </p>
         </div>
@@ -147,16 +139,18 @@ const JoinUs = () => {
         <div className="max-w-6xl mx-auto">
           {/* Open Roles */}
           <div className="mb-16">
-            <h3 className="text-3xl font-orbitron font-bold text-center mb-12 text-white">Open Positions</h3>
+            <h3 className="text-3xl font-orbitron font-bold text-center mb-12 text-gray-900">Open Positions</h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {openRoles.map((role) => (
                 <div
                   key={role.title}
-                  className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-electric/30 transition-all duration-300 hover:shadow-2xl hover:shadow-electric/20 text-center group hover:bg-white/10"
+                  className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-center group border border-gray-100"
                 >
-                  <role.icon className="h-12 w-12 text-electric mx-auto mb-4 group-hover:scale-110 transition-transform duration-200" />
-                  <h4 className="text-lg font-orbitron font-bold mb-2 text-white">{role.title}</h4>
-                  <p className="text-gray-300 font-rajdhani text-sm">{role.description}</p>
+                  <div className="w-16 h-16 bg-gradient-to-br from-electric/10 to-electric/5 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <role.icon className="h-8 w-8 text-electric" />
+                  </div>
+                  <h4 className="text-lg font-orbitron font-bold mb-2 text-gray-900">{role.title}</h4>
+                  <p className="text-gray-600 font-rajdhani text-sm">{role.description}</p>
                 </div>
               ))}
             </div>
@@ -164,20 +158,20 @@ const JoinUs = () => {
 
           {/* Contact Form */}
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
-              <h3 className="text-2xl font-orbitron font-bold mb-6 text-center text-white">Get In Touch</h3>
+            <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
+              <h3 className="text-2xl font-orbitron font-bold mb-6 text-center text-gray-900">Get In Touch</h3>
               
               {errors.general && (
-                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center">
-                  <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
-                  <span className="text-red-400 font-rajdhani">{errors.general}</span>
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center">
+                  <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+                  <span className="text-red-600 font-rajdhani">{errors.general}</span>
                 </div>
               )}
               
               <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-rajdhani font-medium text-gray-200 mb-2">
+                    <label htmlFor="name" className="block text-sm font-rajdhani font-medium text-gray-700 mb-2">
                       Name *
                     </label>
                     <input
@@ -189,20 +183,20 @@ const JoinUs = () => {
                       value={formData.name}
                       onChange={handleChange}
                       disabled={isSubmitting}
-                      className={`w-full px-4 py-3 bg-white/5 backdrop-blur-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 font-rajdhani text-white placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      className={`w-full px-4 py-3 bg-gray-50 border rounded-2xl focus:outline-none focus:ring-2 transition-colors duration-200 font-rajdhani text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed ${
                         errors.name 
-                          ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' 
-                          : 'border-white/20 focus:border-electric focus:ring-electric/20'
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                          : 'border-gray-200 focus:border-electric focus:ring-electric/20'
                       }`}
                       placeholder="Your name"
                       autoComplete="name"
                     />
                     {errors.name && (
-                      <p className="mt-1 text-sm text-red-400 font-rajdhani">{errors.name}</p>
+                      <p className="mt-1 text-sm text-red-500 font-rajdhani">{errors.name}</p>
                     )}
                   </div>
                   <div>
-                    <label htmlFor="email" className="block text-sm font-rajdhani font-medium text-gray-200 mb-2">
+                    <label htmlFor="email" className="block text-sm font-rajdhani font-medium text-gray-700 mb-2">
                       Email *
                     </label>
                     <input
@@ -214,22 +208,22 @@ const JoinUs = () => {
                       value={formData.email}
                       onChange={handleChange}
                       disabled={isSubmitting}
-                      className={`w-full px-4 py-3 bg-white/5 backdrop-blur-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 font-rajdhani text-white placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      className={`w-full px-4 py-3 bg-gray-50 border rounded-2xl focus:outline-none focus:ring-2 transition-colors duration-200 font-rajdhani text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed ${
                         errors.email 
-                          ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' 
-                          : 'border-white/20 focus:border-electric focus:ring-electric/20'
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                          : 'border-gray-200 focus:border-electric focus:ring-electric/20'
                       }`}
                       placeholder="your@email.com"
                       autoComplete="email"
                     />
                     {errors.email && (
-                      <p className="mt-1 text-sm text-red-400 font-rajdhani">{errors.email}</p>
+                      <p className="mt-1 text-sm text-red-500 font-rajdhani">{errors.email}</p>
                     )}
                   </div>
                 </div>
                 
                 <div>
-                  <label htmlFor="role" className="block text-sm font-rajdhani font-medium text-gray-200 mb-2">
+                  <label htmlFor="role" className="block text-sm font-rajdhani font-medium text-gray-700 mb-2">
                     Interested Role
                   </label>
                   <select
@@ -238,10 +232,10 @@ const JoinUs = () => {
                     value={formData.role}
                     onChange={handleChange}
                     disabled={isSubmitting}
-                    className={`w-full px-4 py-3 bg-white/5 backdrop-blur-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 font-rajdhani text-white disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-2xl focus:outline-none focus:ring-2 transition-colors duration-200 font-rajdhani text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed ${
                       errors.role 
-                        ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' 
-                        : 'border-white/20 focus:border-electric focus:ring-electric/20'
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                        : 'border-gray-200 focus:border-electric focus:ring-electric/20'
                     }`}
                   >
                     <option value="">Select a role</option>
@@ -252,12 +246,12 @@ const JoinUs = () => {
                     <option value="other">Other</option>
                   </select>
                   {errors.role && (
-                    <p className="mt-1 text-sm text-red-400 font-rajdhani">{errors.role}</p>
+                    <p className="mt-1 text-sm text-red-500 font-rajdhani">{errors.role}</p>
                   )}
                 </div>
                 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-rajdhani font-medium text-gray-200 mb-2">
+                  <label htmlFor="message" className="block text-sm font-rajdhani font-medium text-gray-700 mb-2">
                     Tell us about yourself *
                   </label>
                   <textarea
@@ -269,29 +263,31 @@ const JoinUs = () => {
                     value={formData.message}
                     onChange={handleChange}
                     disabled={isSubmitting}
-                    className={`w-full px-4 py-3 bg-white/5 backdrop-blur-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 font-rajdhani resize-none text-white placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-2xl focus:outline-none focus:ring-2 transition-colors duration-200 font-rajdhani resize-none text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed ${
                       errors.message 
-                        ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' 
-                        : 'border-white/20 focus:border-electric focus:ring-electric/20'
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                        : 'border-gray-200 focus:border-electric focus:ring-electric/20'
                     }`}
                     placeholder="What makes you a perfect fit for MuseFuze? Show us your passion, skills, and what drives you to create..."
                   ></textarea>
                   {errors.message && (
-                    <p className="mt-1 text-sm text-red-400 font-rajdhani">{errors.message}</p>
+                    <p className="mt-1 text-sm text-red-500 font-rajdhani">{errors.message}</p>
                   )}
-                  <p className="mt-1 text-xs text-gray-400 font-rajdhani">
+                  <p className="mt-1 text-xs text-gray-500 font-rajdhani">
                     {formData.message.length}/1000 characters
                   </p>
                 </div>
                 
-                <p className="mt-8 text-center text-sm text-gray-400 font-rajdhani max-w-xl mx-auto">
-                  <strong>Note:</strong> We’re currently a startup with limited funds. Roles are unpaid but commission-based, and all revenue earned is fairly shared with contributors. We grow together — and you’ll always be credited for your work.
-                </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                  <p className="text-center text-sm text-amber-700 font-rajdhani leading-relaxed">
+                    <strong>Note:</strong> We're currently a startup with limited funds. Roles are unpaid but commission-based, and all revenue earned is fairly shared with contributors. We grow together — and you'll always be credited for your work.
+                  </p>
+                </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full inline-flex items-center justify-center px-6 py-4 bg-gradient-to-r from-electric to-neon text-black font-rajdhani font-bold text-lg rounded-lg hover:shadow-xl hover:shadow-electric/25 transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                  className="w-full inline-flex items-center justify-center px-6 py-4 bg-gradient-to-r from-electric to-neon text-black font-rajdhani font-bold text-lg rounded-2xl hover:shadow-xl hover:shadow-electric/25 transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
                 >
                   {isSubmitting ? (
                     <>

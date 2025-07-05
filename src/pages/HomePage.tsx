@@ -10,7 +10,7 @@ import Footer from '../components/Footer';
 
 const HomePage: React.FC = () => {
   return (
-    <>
+    <div className="bg-black">
       <Navigation />
       <main>
         <Hero />
@@ -21,7 +21,7 @@ const HomePage: React.FC = () => {
         <JoinUs />
       </main>
       <Footer />
-    </>
+    </div>
   );
 };
 

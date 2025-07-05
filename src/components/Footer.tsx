@@ -5,18 +5,20 @@ import CookiePreferencesButton from './CookiePreferencesButton';
 
 const Footer = () => {
   return (
-    <footer className="bg-black border-t border-white/10">
-      <div className="container mx-auto px-6 py-12">
+    <footer className="bg-gray-900 border-t border-gray-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <Zap className="h-8 w-8 text-electric" />
-              <span className="text-2xl font-orbitron font-bold bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">
+              <div className="w-8 h-8 bg-gradient-to-br from-electric to-neon rounded-lg flex items-center justify-center">
+                <Zap className="h-5 w-5 text-black" />
+              </div>
+              <span className="text-2xl font-orbitron font-bold text-white">
                 MuseFuze Studios
               </span>
             </div>
-            <p className="text-gray-300 font-rajdhani mb-6 max-w-md">
+            <p className="text-gray-400 font-rajdhani mb-6 max-w-md leading-relaxed">
               Creating fearlessly, innovating boldly. We're building the future of interactive entertainment, 
               one ambitious project at a time.
             </p>
@@ -25,26 +27,26 @@ const Footer = () => {
                 href="https://github.com/musefuze"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-electric transition-colors duration-200"
+                className="w-10 h-10 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-all duration-200"
                 aria-label="GitHub"
               >
-                <Github className="h-6 w-6" />
+                <Github className="h-5 w-5" />
               </a>
               <a
                 href="https://twitter.com/musefuze"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-electric transition-colors duration-200"
+                className="w-10 h-10 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-all duration-200"
                 aria-label="Twitter"
               >
-                <Twitter className="h-6 w-6" />
+                <Twitter className="h-5 w-5" />
               </a>
               <a
                 href="mailto:hello@musefuze.com"
-                className="text-gray-400 hover:text-electric transition-colors duration-200"
+                className="w-10 h-10 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-all duration-200"
                 aria-label="Email"
               >
-                <Mail className="h-6 w-6" />
+                <Mail className="h-5 w-5" />
               </a>
             </div>
           </div>
@@ -52,14 +54,14 @@ const Footer = () => {
           {/* Quick Links */}
           <div>
             <h3 className="text-lg font-orbitron font-bold text-white mb-4">Quick Links</h3>
-            <ul className="space-y-2 font-rajdhani">
+            <ul className="space-y-3 font-rajdhani">
               <li>
                 <button
                   onClick={() => {
                     const element = document.getElementById('about');
                     element?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="text-gray-400 hover:text-electric transition-colors duration-200"
+                  className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
                   About Us
                 </button>
@@ -70,7 +72,7 @@ const Footer = () => {
                     const element = document.getElementById('team');
                     element?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="text-gray-400 hover:text-electric transition-colors duration-200"
+                  className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
                   Our Team
                 </button>
@@ -81,7 +83,7 @@ const Footer = () => {
                     const element = document.getElementById('join-us');
                     element?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="text-gray-400 hover:text-electric transition-colors duration-200"
+                  className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
                   Join Us
                 </button>
@@ -92,11 +94,11 @@ const Footer = () => {
           {/* Legal */}
           <div>
             <h3 className="text-lg font-orbitron font-bold text-white mb-4">Legal</h3>
-            <ul className="space-y-2 font-rajdhani">
+            <ul className="space-y-3 font-rajdhani">
               <li>
                 <Link
                   to="/privacy-policy"
-                  className="text-gray-400 hover:text-electric transition-colors duration-200"
+                  className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
                   Privacy Policy
                 </Link>
@@ -104,7 +106,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/terms"
-                  className="text-gray-400 hover:text-electric transition-colors duration-200"
+                  className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
                   Terms of Service
                 </Link>
@@ -112,20 +114,20 @@ const Footer = () => {
               <li>
                 <Link
                   to="/cookies-policy"
-                  className="text-gray-400 hover:text-electric transition-colors duration-200"
+                  className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
                   Cookie Policy
                 </Link>
               </li>
               <li>
-                <CookiePreferencesButton variant="text" className="text-gray-400 hover:text-electric transition-colors duration-200" />
+                <CookiePreferencesButton variant="text" className="text-gray-400 hover:text-white transition-colors duration-200" />
               </li>
             </ul>
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-white/10 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+        <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-400 font-rajdhani text-sm">
             © {new Date().getFullYear()} MuseFuze Studios. All rights reserved.
           </p>

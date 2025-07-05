@@ -58,7 +58,7 @@ const PublicFinances: React.FC = () => {
         // If API fails, use sample data
         setFinancialData({
           totalIncome: 404,
-          totalExpenses:404,
+          totalExpenses: 404,
           netProfit: 404,
           totalVAT: 404,
           lastUpdated: new Date().toISOString()
@@ -74,10 +74,10 @@ const PublicFinances: React.FC = () => {
   // Show loading state
   if (loading) {
     return (
-      <section id="finances" className="py-20 bg-black relative">
-        <div className="container mx-auto px-6 relative z-10">
+      <section id="finances" className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-5xl md:text-6xl font-orbitron font-bold mb-6 bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-gray-900">
               Financial Transparency
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-electric to-neon mx-auto mb-8"></div>
@@ -91,21 +91,14 @@ const PublicFinances: React.FC = () => {
   }
 
   return (
-    <section id="finances" className="py-20 bg-black relative">
-      {/* Glassmorphism background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-electric/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-neon/5 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-cyber/5 rounded-full blur-3xl"></div>
-      </div>
-      
-      <div className="container mx-auto px-6 relative z-10">
+    <section id="finances" className="py-24 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-orbitron font-bold mb-6 bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-gray-900">
             Financial Transparency
           </h2>
           <div className="w-24 h-1 bg-gradient-to-r from-electric to-neon mx-auto mb-8"></div>
-          <p className="text-xl font-rajdhani text-gray-300 max-w-3xl mx-auto">
+          <p className="text-xl font-rajdhani text-gray-600 max-w-3xl mx-auto">
             We believe in transparency. As an independent studio, we're committed to sharing our financial journey with our community.
           </p>
         </div>
@@ -114,69 +107,77 @@ const PublicFinances: React.FC = () => {
           {/* Financial Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {/* Total Income */}
-            <div className="bg-gradient-to-br from-green-900/30 to-green-800/30 rounded-xl p-6 border border-green-500/30 group hover:border-green-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
+            <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100 group">
               <div className="flex items-center justify-between mb-4">
-                <TrendingUp className="h-8 w-8 text-green-400 group-hover:scale-110 transition-transform duration-200" />
-                <span className="text-2xl font-bold text-white">{formatCurrency(financialData.totalIncome)}</span>
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500/10 to-green-600/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="h-6 w-6 text-green-600" />
+                </div>
+                <span className="text-2xl font-bold text-gray-900">{formatCurrency(financialData.totalIncome)}</span>
               </div>
-              <h3 className="text-green-300 font-medium mb-2">Total Income</h3>
-              <div className="text-sm text-gray-400">Year to date</div>
+              <h3 className="text-green-600 font-orbitron font-bold mb-2">Total Income</h3>
+              <div className="text-sm text-gray-500 font-rajdhani">Year to date</div>
             </div>
 
             {/* Total Expenses */}
-            <div className="bg-gradient-to-br from-red-900/30 to-red-800/30 rounded-xl p-6 border border-red-500/30 group hover:border-red-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/10">
+            <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100 group">
               <div className="flex items-center justify-between mb-4">
-                <TrendingDown className="h-8 w-8 text-red-400 group-hover:scale-110 transition-transform duration-200" />
-                <span className="text-2xl font-bold text-white">{formatCurrency(financialData.totalExpenses)}</span>
+                <div className="w-12 h-12 bg-gradient-to-br from-red-500/10 to-red-600/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <TrendingDown className="h-6 w-6 text-red-600" />
+                </div>
+                <span className="text-2xl font-bold text-gray-900">{formatCurrency(financialData.totalExpenses)}</span>
               </div>
-              <h3 className="text-red-300 font-medium mb-2">Total Expenses</h3>
-              <div className="text-sm text-gray-400">Year to date</div>
+              <h3 className="text-red-600 font-orbitron font-bold mb-2">Total Expenses</h3>
+              <div className="text-sm text-gray-500 font-rajdhani">Year to date</div>
             </div>
 
             {/* Net Profit */}
-            <div className={`bg-gradient-to-br rounded-xl p-6 border group transition-all duration-300 hover:shadow-xl ${
-              financialData.netProfit >= 0 
-                ? 'from-blue-900/30 to-blue-800/30 border-blue-500/30 hover:border-blue-500/50 hover:shadow-blue-500/10' 
-                : 'from-orange-900/30 to-orange-800/30 border-orange-500/30 hover:border-orange-500/50 hover:shadow-orange-500/10'
-            }`}>
+            <div className={`bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100 group`}>
               <div className="flex items-center justify-between mb-4">
-                <DollarSign className={`h-8 w-8 ${financialData.netProfit >= 0 ? 'text-blue-400' : 'text-orange-400'} group-hover:scale-110 transition-transform duration-200`} />
-                <span className="text-2xl font-bold text-white">{formatCurrency(financialData.netProfit)}</span>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 ${
+                  financialData.netProfit >= 0 
+                    ? 'bg-gradient-to-br from-blue-500/10 to-blue-600/10' 
+                    : 'bg-gradient-to-br from-orange-500/10 to-orange-600/10'
+                }`}>
+                  <DollarSign className={`h-6 w-6 ${financialData.netProfit >= 0 ? 'text-blue-600' : 'text-orange-600'}`} />
+                </div>
+                <span className="text-2xl font-bold text-gray-900">{formatCurrency(financialData.netProfit)}</span>
               </div>
-              <h3 className={`font-medium mb-2 ${financialData.netProfit >= 0 ? 'text-blue-300' : 'text-orange-300'}`}>Net Profit</h3>
-              <div className="text-sm text-gray-400">Income - Expenses</div>
+              <h3 className={`font-orbitron font-bold mb-2 ${financialData.netProfit >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>Net Profit</h3>
+              <div className="text-sm text-gray-500 font-rajdhani">Income - Expenses</div>
             </div>
 
             {/* VAT */}
-            <div className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/30 rounded-xl p-6 border border-yellow-500/30 group hover:border-yellow-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-yellow-500/10">
+            <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100 group">
               <div className="flex items-center justify-between mb-4">
-                <PieChart className="h-8 w-8 text-yellow-400 group-hover:scale-110 transition-transform duration-200" />
-                <span className="text-2xl font-bold text-white">{formatCurrency(financialData.totalVAT)}</span>
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <PieChart className="h-6 w-6 text-yellow-600" />
+                </div>
+                <span className="text-2xl font-bold text-gray-900">{formatCurrency(financialData.totalVAT)}</span>
               </div>
-              <h3 className="text-yellow-300 font-medium mb-2">VAT Collected</h3>
-              <div className="text-sm text-gray-400">Year to date</div>
+              <h3 className="text-yellow-600 font-orbitron font-bold mb-2">VAT Collected</h3>
+              <div className="text-sm text-gray-500 font-rajdhani">Year to date</div>
             </div>
           </div>
 
           {/* Info Box */}
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 relative">
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100 relative">
             <button 
               onClick={() => setShowInfo(!showInfo)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-electric transition-colors"
+              className="absolute top-6 right-6 text-gray-400 hover:text-electric transition-colors"
               aria-label={showInfo ? "Hide information" : "Show information"}
             >
               <Info className="h-5 w-5" />
             </button>
             
-            <h3 className="text-2xl font-orbitron font-bold mb-4 text-white">Our Financial Commitment</h3>
+            <h3 className="text-2xl font-orbitron font-bold mb-4 text-gray-900">Our Financial Commitment</h3>
             
-            <p className="text-gray-300 font-rajdhani mb-4">
+            <p className="text-gray-600 font-rajdhani mb-4 leading-relaxed">
               At MuseFuze Studios, we believe in building trust through transparency. As an independent studio, 
               we're sharing our financial journey with our community and stakeholders.
             </p>
             
             {showInfo && (
-              <div className="mt-6 space-y-4 text-gray-300 font-rajdhani">
+              <div className="mt-6 space-y-4 text-gray-600 font-rajdhani">
                 <p>
                   <strong className="text-electric">Why we share our finances:</strong> We want to build a sustainable 
                   business that creates value for our community, team members, and partners. By sharing our financial 

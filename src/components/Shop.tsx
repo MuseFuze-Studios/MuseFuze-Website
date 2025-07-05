@@ -75,29 +75,23 @@ const Shop = () => {
   // If shop is disabled, show unavailable message
   if (!siteConfig.shop.enabled) {
     return (
-      <section id="shop" className="py-20 bg-black relative">
-        {/* Glassmorphism background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-electric/5 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-neon/5 rounded-full blur-3xl"></div>
-        </div>
-        
-        <div className="container mx-auto px-6 relative z-10">
+      <section id="shop" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-5xl md:text-6xl font-orbitron font-bold mb-6 bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-gray-900">
               Shop
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-electric to-neon mx-auto mb-8"></div>
           </div>
 
           <div className="max-w-2xl mx-auto text-center">
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-12 border border-white/10">
+            <div className="bg-gray-50 rounded-3xl p-12 border border-gray-200">
               <ShoppingBag className="h-16 w-16 text-gray-400 mx-auto mb-6" />
-              <h3 className="text-2xl font-orbitron font-bold mb-4 text-white">Shop Currently Unavailable</h3>
-              <p className="text-xl font-rajdhani text-gray-300 mb-6">
+              <h3 className="text-2xl font-orbitron font-bold mb-4 text-gray-900">Shop Currently Unavailable</h3>
+              <p className="text-xl font-rajdhani text-gray-600 mb-6">
                 Currently, the shop is unavailable :(
               </p>
-              <p className="text-gray-400 font-rajdhani">
+              <p className="text-gray-500 font-rajdhani">
                 We're working hard to bring you some amazing MuseFuze merchandise. Check back soon!
               </p>
             </div>
@@ -108,46 +102,39 @@ const Shop = () => {
   }
 
   return (
-    <section id="shop" className="py-20 bg-black relative">
-      {/* Glassmorphism background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-electric/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-neon/5 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-cyber/5 rounded-full blur-3xl"></div>
-      </div>
-      
-      <div className="container mx-auto px-6 relative z-10">
+    <section id="shop" className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-orbitron font-bold mb-6 bg-gradient-to-r from-electric to-neon bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-orbitron font-bold mb-6 text-gray-900">
             Shop
           </h2>
           <div className="w-24 h-1 bg-gradient-to-r from-electric to-neon mx-auto mb-8"></div>
-          <p className="text-xl font-rajdhani text-gray-300 max-w-2xl mx-auto">
+          <p className="text-xl font-rajdhani text-gray-600 max-w-2xl mx-auto">
             Wear your creativity. Express your rebellion. Rep the MuseFuze movement.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {products.map((product) => (
             <div
               key={product.id}
               className="group cursor-pointer"
               onClick={() => setSelectedProduct(product)}
             >
-              <div className="bg-white/5 backdrop-blur-xl rounded-2xl overflow-hidden border border-white/10 hover:border-electric/30 transition-all duration-300 hover:shadow-2xl hover:shadow-electric/20 hover:bg-white/10">
+              <div className="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100">
                 <div className="aspect-square overflow-hidden">
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-orbitron font-bold text-white">{product.name}</h3>
+                    <h3 className="text-xl font-orbitron font-bold text-gray-900">{product.name}</h3>
                     <span className="text-electric font-rajdhani font-bold text-lg">{product.price}</span>
                   </div>
-                  <p className="text-gray-300 font-rajdhani text-sm">{product.type}</p>
+                  <p className="text-gray-500 font-rajdhani text-sm">{product.type}</p>
                 </div>
               </div>
             </div>
@@ -156,12 +143,12 @@ const Shop = () => {
 
         {/* Product Modal */}
         {selectedProduct && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-50 flex items-center justify-center p-4">
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto border border-white/20">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-auto">
               <div className="relative">
                 <button
                   onClick={() => setSelectedProduct(null)}
-                  className="absolute top-4 right-4 text-gray-300 hover:text-white z-10 bg-black/20 backdrop-blur-sm rounded-full p-2"
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10 bg-white/80 backdrop-blur-sm rounded-full p-2"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -171,19 +158,19 @@ const Shop = () => {
                     <img
                       src={selectedProduct.image}
                       alt={selectedProduct.name}
-                      className="w-full aspect-square object-cover rounded-l-2xl"
+                      className="w-full aspect-square object-cover"
                     />
                   </div>
                   <div className="md:w-1/2 p-8">
-                    <h3 className="text-2xl font-orbitron font-bold mb-2 text-white">{selectedProduct.name}</h3>
+                    <h3 className="text-2xl font-orbitron font-bold mb-2 text-gray-900">{selectedProduct.name}</h3>
                     <p className="text-electric font-rajdhani font-bold text-xl mb-4">{selectedProduct.price}</p>
-                    <p className="text-gray-200 font-rajdhani mb-6">{selectedProduct.description}</p>
+                    <p className="text-gray-600 font-rajdhani mb-6">{selectedProduct.description}</p>
                     
                     <a
                       href={selectedProduct.storeUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-electric to-neon text-black font-rajdhani font-bold rounded-lg hover:shadow-xl hover:shadow-electric/25 transition-all duration-300"
+                      className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-electric to-neon text-black font-rajdhani font-bold rounded-xl hover:shadow-xl hover:shadow-electric/25 transition-all duration-300"
                     >
                       Buy on Store
                       <ExternalLink className="ml-2 h-4 w-4" />
