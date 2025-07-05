@@ -34,37 +34,46 @@ const PrivacyPolicyPage: React.FC = () => {
             <section>
               <h2 className="text-2xl font-orbitron font-bold text-white mb-4">1. Information We Collect</h2>
               <div className="space-y-4">
+                {/* Personal Information */}
                 <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                   <h3 className="text-lg font-orbitron font-bold text-electric mb-2">Personal Information</h3>
                   <ul className="text-gray-300 font-rajdhani space-y-1">
-                    <li>• Name (first and last)</li>
+                    <li>• Full name (first and last)</li>
                     <li>• Email address</li>
-                    <li>• Account credentials (hashed passwords)</li>
-                    <li>• Account preferences and settings</li>
+                    <li>• Username and profile avatar</li>
+                    <li>• Date of birth (if provided)</li>
+                    <li>• Country of registration</li>
+                    <li>• Account credentials (securely hashed)</li>
+                    <li>• Role or access level (e.g. user, staff, dev tester)</li>
+                    <li>• Consent preferences (e.g. marketing, data processing)</li>
                   </ul>
                 </div>
 
+                {/* Usage Information */}
                 <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                   <h3 className="text-lg font-orbitron font-bold text-neon mb-2">Usage Information</h3>
                   <ul className="text-gray-300 font-rajdhani space-y-1">
                     <li>• Login timestamps and session data</li>
-                    <li>• Content you upload or create</li>
-                    <li>• Messages and communications</li>
-                    <li>• Feature usage and interactions</li>
+                    <li>• Messages, comments, and posts made on the platform</li>
+                    <li>• Uploaded or created content</li>
+                    <li>• Referrer and sign-up source</li>
+                    <li>• Feature usage and tool interactions</li>
                   </ul>
                 </div>
 
+                {/* Technical Information */}
                 <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                   <h3 className="text-lg font-orbitron font-bold text-cyber mb-2">Technical Information</h3>
                   <ul className="text-gray-300 font-rajdhani space-y-1">
-                    <li>• IP address (for security purposes)</li>
-                    <li>• Browser type and version</li>
-                    <li>• Device information</li>
+                    <li>• IP address (last login)</li>
+                    <li>• Device and browser type</li>
+                    <li>• Preferred language</li>
                     <li>• Cookies and session tokens</li>
                   </ul>
                 </div>
               </div>
             </section>
+
 
             <section>
               <h2 className="text-2xl font-orbitron font-bold text-white mb-4">2. How We Use Your Information</h2>
@@ -144,6 +153,33 @@ const PrivacyPolicyPage: React.FC = () => {
                 </div>
               </div>
             </section>
+
+            <section>
+              <h2 className="text-2xl font-orbitron font-bold text-white mb-4">Additional Compliance Information</h2>
+              
+              <div className="space-y-6">
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h3 className="text-lg font-orbitron font-bold text-neon mb-2">Analytics & Tracking</h3>
+                  <p className="text-gray-300 font-rajdhani">
+                    We do <strong>not</strong> use any third-party analytics or ad tracking tools on our platform.
+                    All data processing is handled internally with full respect for user privacy and transparency.
+                  </p>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h3 className="text-lg font-orbitron font-bold text-electric mb-2">GDPR Legal Basis</h3>
+                  <p className="text-gray-300 font-rajdhani">
+                    We process your personal data under the following lawful bases, as defined by the UK GDPR:
+                  </p>
+                  <ul className="text-gray-300 font-rajdhani list-disc pl-6 mt-2 space-y-1">
+                    <li><strong>Consent:</strong> When you explicitly agree to data collection or communications.</li>
+                    <li><strong>Contractual Necessity:</strong> To provide services you’ve signed up for.</li>
+                    <li><strong>Legitimate Interest:</strong> To maintain security, improve experience, or prevent fraud, where your rights do not override our interests.</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
 
             <section>
               <h2 className="text-2xl font-orbitron font-bold text-white mb-4">5. Your Rights and Choices</h2>
