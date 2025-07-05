@@ -62,6 +62,38 @@ interface TaxReport {
   generated_at: string;
 }
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'approved':
+      return 'text-green-400 bg-green-900/30';
+    case 'pending':
+      return 'text-yellow-400 bg-yellow-900/30';
+    case 'rejected':
+      return 'text-red-400 bg-red-900/30';
+    default:
+      return 'text-gray-400 bg-gray-900/30';
+  }
+};
+
+const getCategoryColor = (category: string) => {
+  const colors: Record<string, string> = {
+    'Software Licenses': 'text-blue-400 bg-blue-900/30',
+    'Marketing & Advertising': 'text-purple-400 bg-purple-900/30',
+    'Hardware & Equipment': 'text-orange-400 bg-orange-900/30',
+    'Professional Services': 'text-green-400 bg-green-900/30',
+    'Development Tools': 'text-violet-400 bg-violet-900/30',
+    'Investment Funding': 'text-emerald-400 bg-emerald-900/30',
+    'Game Sales': 'text-cyan-400 bg-cyan-900/30',
+  };
+  return colors[category] || 'text-gray-400 bg-gray-900/30';
+};
+
+const getBudgetUsageColor = (percentage: number) => {
+  if (percentage >= 90) return 'text-red-400 bg-red-900/30';
+  if (percentage >= 75) return 'text-yellow-400 bg-yellow-900/30';
+  return 'text-green-400 bg-green-900/30';
+};
+
 // Memoized row for rendering recent transactions efficiently
 const TransactionRow: React.FC<{ transaction: Transaction }> = memo(({ transaction }) => (
   <div className="flex justify-between items-center p-4 bg-gray-700/30 rounded-lg">
@@ -533,33 +565,6 @@ Date:      _______________________
     URL.revokeObjectURL(url);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return 'text-green-400 bg-green-900/30';
-      case 'pending': return 'text-yellow-400 bg-yellow-900/30';
-      case 'rejected': return 'text-red-400 bg-red-900/30';
-      default: return 'text-gray-400 bg-gray-900/30';
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Software Licenses': 'text-blue-400 bg-blue-900/30',
-      'Marketing & Advertising': 'text-purple-400 bg-purple-900/30',
-      'Hardware & Equipment': 'text-orange-400 bg-orange-900/30',
-      'Professional Services': 'text-green-400 bg-green-900/30',
-      'Development Tools': 'text-violet-400 bg-violet-900/30',
-      'Investment Funding': 'text-emerald-400 bg-emerald-900/30',
-      'Game Sales': 'text-cyan-400 bg-cyan-900/30'
-    };
-    return colors[category as keyof typeof colors] || 'text-gray-400 bg-gray-900/30';
-  };
-
-  const getBudgetUsageColor = (percentage: number) => {
-    if (percentage >= 90) return 'text-red-400 bg-red-900/30';
-    if (percentage >= 75) return 'text-yellow-400 bg-yellow-900/30';
-    return 'text-green-400 bg-green-900/30';
-  };
 
   // Calculate totals in GBP using memoization to avoid heavy recalculations
   const {
