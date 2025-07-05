@@ -367,7 +367,7 @@ router.post('/reviews', validateReview, handleValidationErrors, async (req, res)
 router.get('/messages', async (req, res) => {
   try {
     const [posts] = await pool.execute(`
-      SELECT mp.*, u.firstName, u.lastName,
+      SELECT mp.*, u.firstName, u.lastName, u.role,
              (SELECT COUNT(*) FROM message_posts replies WHERE replies.parentId = mp.id) as replyCount
       FROM message_posts mp
       JOIN users u ON mp.authorId = u.id
@@ -383,12 +383,13 @@ router.get('/messages', async (req, res) => {
 
 router.post('/messages', async (req, res) => {
   try {
-    const { title, content, parentId } = req.body;
-    
-    const [result] = await pool.execute(`
-      INSERT INTO message_posts (title, content, authorId, parentId)
-      VALUES (?, ?, ?, ?)
-    `, [title, content, req.user.id, parentId || null]);
+    const { title, content, parentId, category } = req.body;
+
+    await pool.execute(
+      `INSERT INTO message_posts (title, content, authorId, parentId, category)
+       VALUES (?, ?, ?, ?, ?)`,
+      [title, content, req.user.id, parentId || null, category || null]
+    );
 
     res.status(201).json({ message: 'Message posted successfully' });
   } catch (error) {
@@ -397,15 +398,42 @@ router.post('/messages', async (req, res) => {
   }
 });
 
+router.put('/messages/:id', async (req, res) => {
+  try {
+    const { title, content, category } = req.body;
+
+    const [messages] = await pool.execute('SELECT authorId FROM message_posts WHERE id = ?', [req.params.id]);
+
+    if (messages.length === 0) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    if (messages[0].authorId !== req.user.id && !['admin', 'ceo'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Not authorized to edit this message' });
+    }
+
+    await pool.execute(
+      'UPDATE message_posts SET title = ?, content = ?, category = ?, isEdited = TRUE, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+      [title, content, category || null, req.params.id]
+    );
+
+    res.json({ message: 'Message updated successfully' });
+  } catch (error) {
+    console.error('Failed to update message:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/messages/:id/replies', async (req, res) => {
   try {
-    const [replies] = await pool.execute(`
-      SELECT mp.*, u.firstName, u.lastName
-      FROM message_posts mp
-      JOIN users u ON mp.authorId = u.id
-      WHERE mp.parentId = ?
-      ORDER BY mp.createdAt ASC
-    `, [req.params.id]);
+    const [replies] = await pool.execute(
+      `SELECT mp.*, u.firstName, u.lastName, u.role
+       FROM message_posts mp
+       JOIN users u ON mp.authorId = u.id
+       WHERE mp.parentId = ?
+       ORDER BY mp.createdAt ASC`,
+      [req.params.id]
+    );
     res.json({ replies });
   } catch (error) {
     console.error('Failed to fetch replies:', error);

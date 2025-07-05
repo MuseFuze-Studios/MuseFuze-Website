@@ -145,6 +145,7 @@ async function createTables() {
         content TEXT NOT NULL,
         authorId INT NOT NULL,
         parentId INT,
+        category VARCHAR(50),
         isEdited BOOLEAN DEFAULT FALSE,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
