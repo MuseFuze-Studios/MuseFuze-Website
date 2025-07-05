@@ -87,10 +87,21 @@ async function createTables() {
         data_processing_consent BOOLEAN DEFAULT FALSE,
         marketing_consent BOOLEAN DEFAULT FALSE,
         cookie_preferences JSON,
+        username VARCHAR(100),
+        avatar_url VARCHAR(500),
+        country VARCHAR(100),
+        birthdate DATE,
+        referrer VARCHAR(255),
+        signup_source VARCHAR(100),
+        preferred_language VARCHAR(10),
+        last_login_ip VARCHAR(45),
+        last_login_at TIMESTAMP NULL,
+        registered_with_code VARCHAR(100),
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+
 
     // Game builds table
     await pool.execute(`
@@ -110,6 +121,7 @@ async function createTables() {
         FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
+
 
     // Bug reports table
     await pool.execute(`
