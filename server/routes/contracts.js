@@ -1,6 +1,6 @@
 import express from 'express';
 import handlebars from 'handlebars';
-import { pool } from '../config/database.js';
+import { pool, ensureColumn } from '../config/database.js';
 import { authenticateToken, requireAdmin, requireStaff } from '../middleware/auth.js';
 import { sendEmail } from '../services/email.js';
 
@@ -39,8 +39,8 @@ router.post('/assign', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId, templateId } = req.body;
     await pool.execute(
-      'INSERT INTO user_contracts (user_id, template_id) VALUES (?, ?)',
-      [userId, templateId]
+      'INSERT INTO user_contracts (user_id, template_id, assigned_by) VALUES (?, ?, ?)',
+      [userId, templateId, req.user.id]
     );
     res.status(201).json({ message: 'Contract assigned' });
   } catch (err) {
@@ -169,6 +169,94 @@ router.post('/request', authenticateToken, requireStaff, async (req, res) => {
     res.json({ message: 'Request submitted' });
   } catch (err) {
     console.error('Contract request error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// List contract requests for admin/ceo
+router.get('/requests', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    await ensureColumn('user_contracts', 'assigned_by', 'INT NULL');
+    await ensureColumn('contract_requests', 'status', "ENUM('open','resolved') DEFAULT 'open'");
+    await ensureColumn('contract_requests', 'resolved_by', 'INT NULL');
+    await ensureColumn('contract_requests', 'resolved_at', 'TIMESTAMP NULL');
+    let query = `
+      SELECT cr.id, cr.type, cr.message, cr.created_at,
+             uc.id AS contract_id, uc.user_id, uc.assigned_by,
+             u.firstName, u.lastName,
+             ct.title
+        FROM contract_requests cr
+        JOIN user_contracts uc ON cr.user_contract_id = uc.id
+        JOIN users u ON uc.user_id = u.id
+        JOIN contract_templates ct ON uc.template_id = ct.id
+        WHERE cr.status='open'`;
+    const params = [];
+
+    if (req.user.role === 'admin') {
+      query += ' AND uc.assigned_by = ?';
+      params.push(req.user.id);
+    }
+
+    query += ' ORDER BY cr.created_at DESC';
+
+    const [rows] = await pool.execute(query, params);
+    res.json(rows);
+  } catch (err) {
+    console.error('List contract requests error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await ensureColumn('contract_requests', 'status', "ENUM('open','resolved') DEFAULT 'open'");
+    await ensureColumn('contract_requests', 'resolved_by', 'INT NULL');
+    await ensureColumn('contract_requests', 'resolved_at', 'TIMESTAMP NULL');
+
+    const [rows] = await pool.execute(
+      `SELECT cr.status, uc.user_id
+         FROM contract_requests cr
+         JOIN user_contracts uc ON cr.user_contract_id = uc.id
+        WHERE cr.id=?`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    const request = rows[0];
+
+    if (request.status === 'resolved') {
+      return res.json({ message: 'Already resolved' });
+    }
+
+    if (
+      req.user.role === 'staff' &&
+      req.user.id !== request.user_id
+    ) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    if (
+      req.user.role !== 'staff' &&
+      req.user.role !== 'admin' &&
+      req.user.role !== 'ceo'
+    ) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    await pool.execute(
+      `UPDATE contract_requests
+          SET status='resolved', resolved_by=?, resolved_at=NOW()
+        WHERE id=?`,
+      [req.user.id, id]
+    );
+
+    res.json({ message: 'Request resolved' });
+  } catch (err) {
+    console.error('Resolve contract request error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

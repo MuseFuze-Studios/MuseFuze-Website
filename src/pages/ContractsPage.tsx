@@ -6,6 +6,7 @@ import MyContracts from '../components/contracts/MyContracts';
 import ContractEditor from '../components/contracts/ContractEditor';
 import AssignContract from '../components/contracts/AssignContract';
 import ViewUserContracts from '../components/contracts/ViewUserContracts';
+import ContractRequests from '../components/contracts/ContractRequests';
 
 const ContractsPage: React.FC = () => {
   const { user } = useAuth();
@@ -20,7 +21,8 @@ const ContractsPage: React.FC = () => {
     tabs.push(
       { id: 'templates', label: 'Templates', component: ContractEditor },
       { id: 'assign', label: 'Assign', component: AssignContract },
-      { id: 'view', label: 'View User', component: ViewUserContracts }
+      { id: 'view', label: 'View User', component: ViewUserContracts },
+      { id: 'requests', label: 'Requests', component: ContractRequests }
     );
   }
 

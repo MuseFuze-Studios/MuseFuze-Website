@@ -3,6 +3,16 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+export async function ensureColumn(table, column, definition) {
+  const [rows] = await pool.execute(
+    `SHOW COLUMNS FROM \`${table}\` LIKE ?`,
+    [column]
+  );
+  if (rows.length === 0) {
+    await pool.execute(`ALTER TABLE \`${table}\` ADD COLUMN ${definition}`);
+  }
+}
+
 const DB_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
@@ -343,16 +353,19 @@ async function createTables() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         template_id INT NOT NULL,
+        assigned_by INT,
         status ENUM('pending','signed') DEFAULT 'pending',
         signed_at TIMESTAMP NULL,
         signed_name VARCHAR(255),
         signed_ip VARCHAR(45),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (template_id) REFERENCES contract_templates(id) ON DELETE CASCADE
+        FOREIGN KEY (template_id) REFERENCES contract_templates(id) ON DELETE CASCADE,
+        FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
-    
+
+
     // Contract requests
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS contract_requests (
@@ -360,10 +373,15 @@ async function createTables() {
         user_contract_id INT NOT NULL,
         type ENUM('amend','appeal','leave') NOT NULL,
         message TEXT,
+        status ENUM('open','resolved') DEFAULT 'open',
+        resolved_by INT,
+        resolved_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_contract_id) REFERENCES user_contracts(id) ON DELETE CASCADE
+        FOREIGN KEY (user_contract_id) REFERENCES user_contracts(id) ON DELETE CASCADE,
+        FOREIGN KEY (resolved_by) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
+
     // Insert default company info if not exists
     await pool.execute(`
       INSERT IGNORE INTO company_info (id, company_name, company_number, vat_registration, utr)
