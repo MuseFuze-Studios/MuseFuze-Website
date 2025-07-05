@@ -561,7 +561,6 @@ Date:      _______________________
     return 'text-green-400 bg-green-900/30';
   };
 
-  // Calculate totals in GBP using memoization to avoid heavy recalculations
   const {
     totalIncome,
     totalExpenses,
@@ -606,8 +605,6 @@ Date:      _______________________
       </div>
     );
   }
-
-  const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
 
   return (
     <div className="p-8">
