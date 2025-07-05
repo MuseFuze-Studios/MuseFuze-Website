@@ -41,6 +41,16 @@ const ContractRequests: React.FC = () => {
       console.error('Failed to load requests', err);
     }
   };
+  const open = async (id: number) => {
+    try {
+      const res = await contractAPI.getRequest(id);
+      setActive(res.data);
+      setNewContent(res.data.content || '');
+      setReason('');
+    } catch (err) {
+      console.error('Failed to load request', err);
+    }
+  };
 
   const open = async (id: number) => {
     try {

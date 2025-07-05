@@ -335,6 +335,7 @@ router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
     ) {
       return res.status(403).json({ error: 'Forbidden' });
     }
+    const { outcome = 'approved', notes = '', newContent } = req.body;
 
     const { outcome = 'approved', notes = '', newContent } = req.body;
 
@@ -386,6 +387,24 @@ router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
       req.user.id,
       req.ip
     );
+    // notify user
+    try {
+      const [info] = await pool.execute(
+        `SELECT u.email, u.firstName, ct.title
+           FROM user_contracts uc
+           JOIN users u ON uc.user_id = u.id
+           JOIN contract_templates ct ON uc.template_id = ct.id
+          WHERE uc.id=?`,
+        [request.user_contract_id]
+      );
+      if (info.length) {
+        const data = info[0];
+        const html = `<p>Dear ${data.firstName}, your contract request has been ${outcome}. ${notes}</p>`;
+        await sendEmail(data.email, `Contract Request ${outcome}`, html);
+      }
+    } catch (e) {
+      console.error('Resolve request email error:', e);
+    }
 
     // notify user
     try {

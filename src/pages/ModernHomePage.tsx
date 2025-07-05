@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Gamepad2, Crosshair, Target, Rocket, Zap } from 'lucide-react';
+import { Gamepad2, Crosshair, Target, Rocket, Zap, Bold } from 'lucide-react';
 import useInView from '../hooks/useInView';
 import PublicFinances from '../components/PublicFinances';
 import Team from '../components/Team';
@@ -34,7 +34,7 @@ const ModernHomePage: React.FC = () => {
           className={`relative z-10 px-4 transition-all duration-700 ${heroInView ? 'animate-slide-up' : 'opacity-0 translate-y-12'}`}
         >
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-orbitron font-black mb-6 bg-gradient-to-r from-electric to-neon text-transparent bg-clip-text">
-            Creating Fearlessly. Innovating Boldly.
+            We create, you lead.
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl font-rajdhani text-gray-300 mb-10 max-w-3xl mx-auto">
             We build games and software that challenge, connect, and matter.
@@ -98,9 +98,12 @@ const ModernHomePage: React.FC = () => {
               <div className="w-14 h-14 flex items-center justify-center rounded-2xl mb-4 bg-electric/10">
                 <Target className="h-8 w-8 text-electric" />
               </div>
-              <h3 className="text-xl font-orbitron font-bold mb-2">Mission Driven</h3>
+              <h3 className="text-xl font-orbitron font-bold mb-2">Purpose Built</h3>
               <p className="text-gray-300 font-rajdhani">
-                We pursue ideas that matter and craft experiences that last.
+                We build to break the stigma.
+              </p>
+              <p className="text-gray-400 font-rajdhani">
+                To redefine what a company should be. Remembered not for profit, but for impact.
               </p>
             </div>
             <div
