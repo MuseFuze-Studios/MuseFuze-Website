@@ -22,7 +22,7 @@ const ModernHomePage: React.FC = () => {
       {/* Hero Section */}
       <section
         ref={heroRef}
-        className="min-h-screen flex items-center justify-center text-center bg-gradient-to-br from-gray-950 via-black to-gray-900 relative overflow-hidden"
+        className="min-h-[calc(100vh-4rem)] flex items-center justify-center text-center bg-gradient-to-br from-gray-950 via-black to-gray-900 relative overflow-hidden"
       >
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-24 -left-24 w-96 h-96 bg-electric/10 rounded-full blur-3xl" />
