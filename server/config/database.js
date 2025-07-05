@@ -313,6 +313,17 @@ async function createTables() {
       )
     `);
 
+    // Sent emails log table (optional)
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS sent_emails (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        type VARCHAR(100) NOT NULL,
+        success BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Insert default company info if not exists
     await pool.execute(`
       INSERT IGNORE INTO company_info (id, company_name, company_number, vat_registration, utr)

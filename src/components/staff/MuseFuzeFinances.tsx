@@ -608,7 +608,6 @@ Date:      _______________________
     return 'text-green-400 bg-green-900/30';
   };
 
-    
   const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
 
   if (loading) {
