@@ -201,6 +201,7 @@ router.get('/:id/diff', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 // Request contract change
 router.post('/request', authenticateToken, requireStaff, async (req, res) => {
   try {
@@ -336,6 +337,8 @@ router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
     }
     const { outcome = 'approved', notes = '', newContent } = req.body;
 
+    const { outcome = 'approved', notes = '', newContent } = req.body;
+
     await pool.execute(
       `UPDATE contract_requests
           SET status='resolved', outcome=?, notes=?, resolved_by=?, resolved_at=NOW()
@@ -384,6 +387,25 @@ router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
       req.user.id,
       req.ip
     );
+    // notify user
+    try {
+      const [info] = await pool.execute(
+        `SELECT u.email, u.firstName, ct.title
+           FROM user_contracts uc
+           JOIN users u ON uc.user_id = u.id
+           JOIN contract_templates ct ON uc.template_id = ct.id
+          WHERE uc.id=?`,
+        [request.user_contract_id]
+      );
+      if (info.length) {
+        const data = info[0];
+        const html = `<p>Dear ${data.firstName}, your contract request has been ${outcome}. ${notes}</p>`;
+        await sendEmail(data.email, `Contract Request ${outcome}`, html);
+      }
+    } catch (e) {
+      console.error('Resolve request email error:', e);
+    }
+
     // notify user
     try {
       const [info] = await pool.execute(
