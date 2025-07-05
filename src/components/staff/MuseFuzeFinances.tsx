@@ -597,6 +597,8 @@ Date:      _______________________
     };
   }, [transactions, budgets]);
 
+  const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
+
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center">
