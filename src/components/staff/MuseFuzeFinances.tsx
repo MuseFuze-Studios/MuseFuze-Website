@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { DollarSign, TrendingUp, TrendingDown, PieChart, Plus, Receipt, Target, FileText, Download, Calculator, AlertTriangle, Building, Settings } from 'lucide-react';
 import { staffAPI } from '../../services/api';
 import { formatCurrency, formatDate, formatPercentage } from '../../utils/formatters';
@@ -61,6 +61,57 @@ interface TaxReport {
   status: 'draft' | 'submitted' | 'accepted' | 'rejected';
   generated_at: string;
 }
+
+// Memoized row for rendering recent transactions efficiently
+const TransactionRow: React.FC<{ transaction: Transaction }> = memo(({ transaction }) => (
+  <div className="flex justify-between items-center p-4 bg-gray-700/30 rounded-lg">
+    <div className="flex-1">
+      <div className="flex items-center space-x-3 mb-2">
+        <span className={`px-2 py-1 rounded text-sm font-medium ${getCategoryColor(transaction.category)}`}>{transaction.category}</span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>{transaction.status.toUpperCase()}</span>
+        {transaction.vat_amount > 0 && (
+          <span className="px-2 py-1 bg-yellow-900/30 text-yellow-300 rounded text-xs">
+            VAT: £{(Number(transaction.vat_amount) || 0).toFixed(2)}
+          </span>
+        )}
+      </div>
+      <h4 className="text-white font-medium">{transaction.description}</h4>
+      <p className="text-gray-400 text-sm">{transaction.justification}</p>
+      <div className="text-xs text-gray-500 mt-1">
+        By {transaction.responsible_staff} • {new Date(transaction.date).toLocaleDateString()}
+        {transaction.hmrc_category && (<span className="ml-2">• HMRC: {transaction.hmrc_category}</span>)}
+      </div>
+    </div>
+    <div className="text-right">
+      <div className={`text-xl font-bold ${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>{transaction.type === 'income' ? '+' : '-'}£{parseFloat(transaction.amount.toString()).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+      <div className="text-xs text-gray-400">
+        {transaction.currency} • {parseFloat(transaction.vat_rate.toString())}% VAT
+        {transaction.vat_amount > 0 && ` (£${parseFloat(transaction.vat_amount.toString()).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
+ </div>
+ </div>
+ </div>
+));
+
+// Memoized row for displaying forecast entries
+const ForecastRow: React.FC<{ forecast: Forecast }> = memo(({ forecast }) => (
+  <div className="flex justify-between items-center">
+    <span className="text-gray-300">{forecast.month}</span>
+    <div className="flex items-center space-x-4">
+      <div className="text-right">
+        <div className="text-blue-400 text-sm">Est: £{forecast.estimated.toLocaleString()}</div>
+        {forecast.actual > 0 && (
+          <div className="text-white text-sm">Act: £{forecast.actual.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        )}
+      </div>
+      <div className="w-24 bg-gray-700 rounded-full h-2">
+        <div
+          className="bg-blue-500 h-2 rounded-full"
+          style={{ width: `${Number(forecast.actual || 0) > 0 ? Math.min((Number(forecast.actual || 0) / Number(forecast.estimated || 1)) * 100, 100) : 0}%` }}
+        ></div>
+      </div>
+    </div>
+  </div>
+));
 
 const MuseFuzeFinances: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -510,17 +561,41 @@ Date:      _______________________
     return 'text-green-400 bg-green-900/30';
   };
 
-  // Calculate totals in GBP
-  const totalIncome = transactions.filter(t => t.type === 'income' && t.status === 'approved').reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
-  const totalExpenses = transactions.filter(t => t.type === 'expense' && t.status === 'approved').reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
-  const totalVAT = transactions.filter(t => t.status === 'approved').reduce((sum, t) => sum + parseFloat((t.vat_amount || 0).toString()), 0);
-  const netIncome = totalIncome - totalExpenses;
-  const totalBudgetAllocated = budgets.reduce((sum, b) => sum + parseFloat(b.allocated.toString()), 0);
-  const totalBudgetSpent = budgets.reduce((sum, b) => sum + parseFloat(b.spent.toString()), 0);
-  
-  // Calculate corporation tax (19%)
-  const corpTaxRate = 0.19;
-  const estimatedCorpTax = Math.max(0, netIncome * corpTaxRate);
+  // Calculate totals in GBP using memoization to avoid heavy recalculations
+  const {
+    totalIncome,
+    totalExpenses,
+    totalVAT,
+    netIncome,
+    totalBudgetAllocated,
+    totalBudgetSpent,
+    estimatedCorpTax
+  } = useMemo(() => {
+    const income = transactions
+      .filter(t => t.type === 'income' && t.status === 'approved')
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    const expenses = transactions
+      .filter(t => t.type === 'expense' && t.status === 'approved')
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    const vat = transactions
+      .filter(t => t.status === 'approved')
+      .reduce((sum, t) => sum + parseFloat((t.vat_amount || 0).toString()), 0);
+    const net = income - expenses;
+    const budgetAllocated = budgets.reduce((sum, b) => sum + parseFloat(b.allocated.toString()), 0);
+    const budgetSpent = budgets.reduce((sum, b) => sum + parseFloat(b.spent.toString()), 0);
+    const corpTaxRate = 0.19; // 19%
+    const corpTax = Math.max(0, net * corpTaxRate);
+
+    return {
+      totalIncome: income,
+      totalExpenses: expenses,
+      totalVAT: vat,
+      netIncome: net,
+      totalBudgetAllocated: budgetAllocated,
+      totalBudgetSpent: budgetSpent,
+      estimatedCorpTax: corpTax
+    };
+  }, [transactions, budgets]);
 
   if (loading) {
     return (
@@ -529,6 +604,8 @@ Date:      _______________________
       </div>
     );
   }
+
+  const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
 
   return (
     <div className="p-8">
@@ -759,23 +836,7 @@ Date:      _______________________
           <div className="space-y-4">
             {forecasts.length > 0 ? (
               forecasts.map((forecast, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span className="text-gray-300">{forecast.month}</span>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <div className="text-blue-400 text-sm">Est: £{forecast.estimated.toLocaleString()}</div>
-                      {forecast.actual > 0 && (
-                        <div className="text-white text-sm">Act: £{forecast.actual.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                      )}
-                    </div>
-                    <div className="w-24 bg-gray-700 rounded-full h-2">
-                      <div
-                        className="bg-blue-500 h-2 rounded-full"
-                        style={{ width: `${Number(forecast.actual || 0) > 0 ? Math.min((Number(forecast.actual || 0) / Number(forecast.estimated || 1)) * 100, 100) : 0}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
+                <ForecastRow key={index} forecast={forecast} />
               ))
             ) : (
               <div className="text-center py-8">
@@ -795,44 +856,9 @@ Date:      _______________________
         </h3>
         
         <div className="space-y-4">
-          {transactions.length > 0 ? (
-            transactions.slice(0, 5).map((transaction) => (
-              <div key={transaction.id} className="flex justify-between items-center p-4 bg-gray-700/30 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <span className={`px-2 py-1 rounded text-sm font-medium ${getCategoryColor(transaction.category)}`}>
-                      {transaction.category}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
-                      {transaction.status.toUpperCase()}
-                    </span>
-                    {transaction.vat_amount > 0 && (
-                      <span className="px-2 py-1 bg-yellow-900/30 text-yellow-300 rounded text-xs">
-                        VAT: £{(Number(transaction.vat_amount) || 0).toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                  <h4 className="text-white font-medium">{transaction.description}</h4>
-                  <p className="text-gray-400 text-sm">{transaction.justification}</p>
-                  <div className="text-xs text-gray-500 mt-1">
-                    By {transaction.responsible_staff} • {new Date(transaction.date).toLocaleDateString()}
-                    {transaction.hmrc_category && (
-                      <span className="ml-2">• HMRC: {transaction.hmrc_category}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className={`text-xl font-bold ${
-                    transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    {transaction.type === 'income' ? '+' : '-'}£{parseFloat(transaction.amount.toString()).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {transaction.currency} • {parseFloat(transaction.vat_rate.toString())}% VAT
-                    {transaction.vat_amount > 0 && ` (£${parseFloat(transaction.vat_amount.toString()).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})})`}
-                  </div>
-                </div>
-              </div>
+          {recentTransactions.length > 0 ? (
+            recentTransactions.map((transaction) => (
+              <TransactionRow key={transaction.id} transaction={transaction} />
             ))
           ) : (
             <div className="text-center py-8">
