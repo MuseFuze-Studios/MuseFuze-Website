@@ -18,6 +18,7 @@ import {
   Smartphone,
   Monitor,
   CheckCircle,
+  FileSignature,
   XCircle,
   Clock,
   ArrowRight,
@@ -302,6 +303,25 @@ const DashboardPage: React.FC = () => {
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
+
+                  {isStaffOrAbove && (
+                    <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700 p-6 hover:border-electric/30 transition-all duration-300 hover:shadow-xl hover:shadow-electric/10 group">
+                      <div className="flex items-center space-x-4 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-xl flex items-center justify-center border border-yellow-500/30">
+                          <FileSignature className="h-6 w-6 text-yellow-400" />
+                        </div>
+                        <h3 className="font-orbitron font-bold text-white">Contracts</h3>
+                      </div>
+                      <p className="text-gray-400 font-rajdhani mb-4">Review and sign company contracts</p>
+                      <button
+                        onClick={() => navigate('/contracts')}
+                        className="text-electric hover:text-neon font-rajdhani font-medium flex items-center space-x-2 group-hover:translate-x-1 transition-transform duration-200"
+                      >
+                        <span>Open</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Account Status */}
