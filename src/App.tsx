@@ -12,6 +12,7 @@ import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import StaffDashboard from './pages/StaffDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import ContractsPage from './pages/ContractsPage';
 import CookiesPolicyPage from './pages/CookiesPolicyPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -34,6 +35,14 @@ function App() {
                   </ProtectedRoute>
                 }
                 />
+              <Route
+                path="/contracts"
+                element={
+                  <ProtectedRoute requireStaff>
+                    <ContractsPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/staff"
                 element={
