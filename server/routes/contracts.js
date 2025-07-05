@@ -6,6 +6,17 @@ import { sendEmail } from '../services/email.js';
 
 const router = express.Router();
 
+async function logAction(contractId, action, message, userId, ip) {
+  try {
+    await pool.execute(
+      `INSERT INTO contract_logs (user_contract_id, action, message, performed_by, ip_address) VALUES (?, ?, ?, ?, ?)`,
+      [contractId, action, message, userId, ip]
+    );
+  } catch (err) {
+    console.error('Log action error:', err);
+  }
+}
+
 // Create contract template
 router.post('/templates', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -38,10 +49,11 @@ router.get('/templates', authenticateToken, requireAdmin, async (req, res) => {
 router.post('/assign', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId, templateId } = req.body;
-    await pool.execute(
+    const [result] = await pool.execute(
       'INSERT INTO user_contracts (user_id, template_id, assigned_by) VALUES (?, ?, ?)',
       [userId, templateId, req.user.id]
     );
+    await logAction(result.insertId, 'assigned', null, req.user.id, req.ip);
     res.status(201).json({ message: 'Contract assigned' });
   } catch (err) {
     console.error('Assign contract error:', err);
@@ -52,6 +64,7 @@ router.post('/assign', authenticateToken, requireAdmin, async (req, res) => {
 async function fetchUserContracts(userId) {
   const [rows] = await pool.execute(
     `SELECT uc.id, uc.status, uc.signed_at, uc.signed_name, uc.signed_ip,
+            uc.is_active,
             ct.title, ct.content,
             u.firstName, u.lastName, u.email
        FROM user_contracts uc
@@ -76,6 +89,7 @@ async function fetchUserContracts(userId) {
       signed_at: row.signed_at,
       signed_name: row.signed_name,
       signed_ip: row.signed_ip,
+      is_active: row.is_active,
       content: compiled,
     };
   });
@@ -140,9 +154,50 @@ router.post('/sign/:id', authenticateToken, requireStaff, async (req, res) => {
       console.error('Contract email error:', e);
     }
 
+    await logAction(id, 'signed', `Signed by ${fullName}`, req.user.id, ip);
+
     res.json({ message: 'Contract signed' });
   } catch (err) {
     console.error('Sign contract error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Contract history
+router.get('/:id/history', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.execute(
+      `SELECT cl.action, cl.message, cl.ip_address, cl.created_at, u.firstName, u.lastName
+         FROM contract_logs cl
+         LEFT JOIN users u ON cl.performed_by = u.id
+        WHERE cl.user_contract_id = ?
+        ORDER BY cl.created_at ASC`,
+      [id]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error('Get contract history error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/:id/diff', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.execute(
+      `SELECT message FROM contract_logs
+        WHERE user_contract_id=? AND action='amended'
+        ORDER BY created_at DESC LIMIT 1`,
+      [id]
+    );
+    if (!rows.length) {
+      return res.json({});
+    }
+    res.json(JSON.parse(rows[0].message));
+  } catch (err) {
+    console.error('Get contract diff error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -166,6 +221,8 @@ router.post('/request', authenticateToken, requireStaff, async (req, res) => {
       [contractId, type, message]
     );
 
+    await logAction(contractId, `${type}_requested`, message, req.user.id, req.ip);
+
     res.json({ message: 'Request submitted' });
   } catch (err) {
     console.error('Contract request error:', err);
@@ -181,7 +238,7 @@ router.get('/requests', authenticateToken, requireAdmin, async (req, res) => {
     await ensureColumn('contract_requests', 'resolved_by', 'INT NULL');
     await ensureColumn('contract_requests', 'resolved_at', 'TIMESTAMP NULL');
     let query = `
-      SELECT cr.id, cr.type, cr.message, cr.created_at,
+      SELECT cr.id, cr.type, cr.message, cr.created_at, cr.outcome, cr.notes,
              uc.id AS contract_id, uc.user_id, uc.assigned_by,
              u.firstName, u.lastName,
              ct.title
@@ -197,6 +254,11 @@ router.get('/requests', authenticateToken, requireAdmin, async (req, res) => {
       params.push(req.user.id);
     }
 
+    if (req.query.type) {
+      query += ' AND cr.type = ?';
+      params.push(req.query.type);
+    }
+
     query += ' ORDER BY cr.created_at DESC';
 
     const [rows] = await pool.execute(query, params);
@@ -207,15 +269,42 @@ router.get('/requests', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+router.get('/requests/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.execute(
+      `SELECT cr.id, cr.type, cr.message, cr.created_at, cr.status, cr.outcome, cr.notes,
+              uc.id AS contract_id, uc.status AS contract_status, uc.signed_at,
+              uc.signed_name, uc.signed_ip, uc.assigned_by, uc.user_id,
+              ct.title, ct.content
+         FROM contract_requests cr
+         JOIN user_contracts uc ON cr.user_contract_id = uc.id
+         JOIN contract_templates ct ON uc.template_id = ct.id
+        WHERE cr.id=?`,
+      [id]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Get contract request error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     await ensureColumn('contract_requests', 'status', "ENUM('open','resolved') DEFAULT 'open'");
     await ensureColumn('contract_requests', 'resolved_by', 'INT NULL');
     await ensureColumn('contract_requests', 'resolved_at', 'TIMESTAMP NULL');
+    await ensureColumn('contract_requests', 'outcome', "ENUM('approved','denied') DEFAULT 'approved'");
+    await ensureColumn('contract_requests', 'notes', 'TEXT NULL');
+    await ensureColumn('user_contracts', 'is_active', 'BOOLEAN DEFAULT TRUE');
 
     const [rows] = await pool.execute(
-      `SELECT cr.status, uc.user_id
+      `SELECT cr.status, cr.type, cr.user_contract_id, uc.user_id, uc.template_id
          FROM contract_requests cr
          JOIN user_contracts uc ON cr.user_contract_id = uc.id
         WHERE cr.id=?`,
@@ -247,12 +336,75 @@ router.post('/requests/:id/resolve', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
+    const { outcome = 'approved', notes = '', newContent } = req.body;
+
     await pool.execute(
       `UPDATE contract_requests
-          SET status='resolved', resolved_by=?, resolved_at=NOW()
+          SET status='resolved', outcome=?, notes=?, resolved_by=?, resolved_at=NOW()
         WHERE id=?`,
-      [req.user.id, id]
+      [outcome, notes, req.user.id, id]
     );
+
+    if (request.type === 'leave' && outcome === 'approved') {
+      await pool.execute(
+        'UPDATE user_contracts SET is_active=FALSE WHERE id=?',
+        [request.user_contract_id]
+      );
+    }
+
+    if (request.type === 'appeal' && outcome === 'approved') {
+      await pool.execute(
+        "UPDATE user_contracts SET status='pending' WHERE id=?",
+        [request.user_contract_id]
+      );
+    }
+
+    if (request.type === 'amend' && outcome === 'approved' && newContent) {
+      const [tplRows] = await pool.execute(
+        'SELECT title, content FROM contract_templates WHERE id=?',
+        [request.template_id]
+      );
+      if (tplRows.length) {
+        const tpl = tplRows[0];
+        const [newTpl] = await pool.execute(
+          'INSERT INTO contract_templates (title, content, created_by) VALUES (?, ?, ?)',
+          [tpl.title, newContent, req.user.id]
+        );
+        const diff = JSON.stringify({ old: tpl.content, new: newContent });
+        await pool.execute(
+          `UPDATE user_contracts SET template_id=?, status='pending', signed_at=NULL, signed_name=NULL, signed_ip=NULL WHERE id=?`,
+          [newTpl.insertId, request.user_contract_id]
+        );
+        await logAction(request.user_contract_id, 'amended', diff, req.user.id, req.ip);
+      }
+    }
+
+    await logAction(
+      request.user_contract_id,
+      `request_${outcome}`,
+      notes,
+      req.user.id,
+      req.ip
+    );
+
+    // notify user
+    try {
+      const [info] = await pool.execute(
+        `SELECT u.email, u.firstName, ct.title
+           FROM user_contracts uc
+           JOIN users u ON uc.user_id = u.id
+           JOIN contract_templates ct ON uc.template_id = ct.id
+          WHERE uc.id=?`,
+        [request.user_contract_id]
+      );
+      if (info.length) {
+        const data = info[0];
+        const html = `<p>Dear ${data.firstName}, your contract request has been ${outcome}. ${notes}</p>`;
+        await sendEmail(data.email, `Contract Request ${outcome}`, html);
+      }
+    } catch (e) {
+      console.error('Resolve request email error:', e);
+    }
 
     res.json({ message: 'Request resolved' });
   } catch (err) {

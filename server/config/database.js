@@ -370,6 +370,7 @@ async function createTables() {
         signed_at TIMESTAMP NULL,
         signed_name VARCHAR(255),
         signed_ip VARCHAR(45),
+        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (template_id) REFERENCES contract_templates(id) ON DELETE CASCADE,
@@ -381,6 +382,11 @@ async function createTables() {
       'user_contracts',
       'assigned_by',
       'assigned_by INT NULL'
+    );
+    await ensureColumn(
+      'user_contracts',
+      'is_active',
+      'is_active BOOLEAN DEFAULT TRUE'
     );
     // Contract requests
     await pool.execute(`
@@ -413,6 +419,30 @@ async function createTables() {
       'resolved_at',
       'resolved_at TIMESTAMP NULL'
     );
+    await ensureColumn(
+      'contract_requests',
+      'outcome',
+      "outcome ENUM('approved','denied') DEFAULT 'approved'"
+    );
+    await ensureColumn(
+      'contract_requests',
+      'notes',
+      'notes TEXT NULL'
+    );
+
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS contract_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_contract_id INT NOT NULL,
+        action VARCHAR(50) NOT NULL,
+        message TEXT,
+        ip_address VARCHAR(45),
+        performed_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_contract_id) REFERENCES user_contracts(id) ON DELETE CASCADE,
+        FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `);
     // Insert default company info if not exists
     await pool.execute(`
       INSERT IGNORE INTO company_info (id, company_name, company_number, vat_registration, utr)

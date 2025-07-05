@@ -9,6 +9,7 @@ interface Contract {
   signed_at: string | null;
   signed_name?: string;
   signed_ip?: string;
+  is_active: boolean;
 }
 
 interface Props {
@@ -47,29 +48,33 @@ const ViewContract: React.FC<Props> = ({ contract, onClose }) => {
           {contract.signed_ip && <div>IP: {contract.signed_ip}</div>}
         </div>
       )}
-      {sent ? (
-        <p className="text-green-400">Request submitted.</p>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <select value={type} onChange={e => setType(e.target.value)} className="px-2 py-1 bg-gray-800 border border-gray-700 rounded-lg">
-              <option value="amend">Request Amendment</option>
-              <option value="appeal">Appeal</option>
-              <option value="leave">Leave Contract</option>
-            </select>
-            <button onClick={() => setSent(false)} className="hidden" />
+      {contract.is_active ? (
+        sent ? (
+          <p className="text-green-400">Request submitted.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <select value={type} onChange={e => setType(e.target.value)} className="px-2 py-1 bg-gray-800 border border-gray-700 rounded-lg">
+                <option value="amend">Request Amendment</option>
+                <option value="appeal">Appeal</option>
+                <option value="leave">Leave Contract</option>
+              </select>
+              <button onClick={() => setSent(false)} className="hidden" />
+            </div>
+            <textarea
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              className="w-full h-24 p-2 bg-gray-800 border border-gray-700 rounded-lg"
+              placeholder="Additional details (optional)"
+            />
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+            <button onClick={submit} disabled={loading} className="px-6 py-2 bg-gradient-to-r from-electric to-neon text-black rounded-lg font-rajdhani font-bold disabled:opacity-50">
+              {loading ? 'Sending...' : 'Submit Request'}
+            </button>
           </div>
-          <textarea
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            className="w-full h-24 p-2 bg-gray-800 border border-gray-700 rounded-lg"
-            placeholder="Additional details (optional)"
-          />
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button onClick={submit} disabled={loading} className="px-6 py-2 bg-gradient-to-r from-electric to-neon text-black rounded-lg font-rajdhani font-bold disabled:opacity-50">
-            {loading ? 'Sending...' : 'Submit Request'}
-          </button>
-        </div>
+        )
+      ) : (
+        <p className="text-gray-400">This contract is inactive.</p>
       )}
       <button onClick={onClose} className="text-gray-400 ml-4">Close</button>
     </div>
