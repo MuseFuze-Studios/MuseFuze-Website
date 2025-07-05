@@ -149,6 +149,8 @@ export const contractAPI = {
     api.post(`/contracts/sign/${id}`, { fullName }),
   requestChange: (data: { contractId: number; type: string; message: string }) =>
     api.post('/contracts/request', data),
+  getRequests: () => api.get('/contracts/requests'),
+  resolveRequest: (id: number) => api.post(`/contracts/requests/${id}/resolve`),
 };
 
 // Admin API
