@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { contractAPI } from '../../services/api';
 import SignContract from './SignContract';
+import ViewContract from './ViewContract';
 
 interface Contract {
   id: number;
@@ -14,6 +15,7 @@ interface Contract {
 const MyContracts: React.FC = () => {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [active, setActive] = useState<Contract | null>(null);
+  const [view, setView] = useState<Contract | null>(null);
 
   const load = async () => {
     try {
@@ -29,7 +31,11 @@ const MyContracts: React.FC = () => {
   if (active) {
     return <SignContract contract={active} onDone={() => { setActive(null); load(); }} />;
   }
-
+  
+  if (view) {
+    return <ViewContract contract={view} onClose={() => setView(null)} />;
+  }
+        
   return (
     <div className="space-y-6 p-6">
       <h2 className="font-orbitron text-2xl font-bold mb-4">My Contracts</h2>
@@ -49,6 +55,12 @@ const MyContracts: React.FC = () => {
                 Sign
               </button>
             ) : (
+              <button
+                onClick={() => setView(c)}
+                className="px-4 py-2 bg-gray-700 text-white rounded-lg font-rajdhani"
+              >
+                View
+              </button>
               <span className="text-green-400 text-sm">Signed</span>
             )}
           </li>

@@ -147,4 +147,30 @@ router.post('/sign/:id', authenticateToken, requireStaff, async (req, res) => {
   }
 });
 
+// Request contract change
+router.post('/request', authenticateToken, requireStaff, async (req, res) => {
+  try {
+    const { contractId, type, message } = req.body;
+
+    // verify ownership
+    const [rows] = await pool.execute(
+      'SELECT id FROM user_contracts WHERE id=? AND user_id=?',
+      [contractId, req.user.id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Contract not found' });
+    }
+
+    await pool.execute(
+      `INSERT INTO contract_requests (user_contract_id, type, message) VALUES (?, ?, ?)`,
+      [contractId, type, message]
+    );
+
+    res.json({ message: 'Request submitted' });
+  } catch (err) {
+    console.error('Contract request error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
